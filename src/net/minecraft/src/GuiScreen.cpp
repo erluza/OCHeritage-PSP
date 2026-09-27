@@ -46,11 +46,9 @@ bool menuPointerInputSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr
 	if (target != nullptr && target->suppressesPlatformPointerInput())
 		return true;
 #endif
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	return mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI &&
 	       (target == nullptr || !target->allowsPlatformPointerInput());
-#elif PLATFORM_PSP
-	return false;
 #elif PLATFORM_WII
 	(void)mc;
 	(void)target;
@@ -65,11 +63,11 @@ bool menuPointerInputSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr
 bool menuCursorSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr)
 {
 	const GuiScreen *target = (screen != nullptr) ? screen : (mc != nullptr ? mc->currentScreen : nullptr);
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (target != nullptr && target->suppressesPlatformPointerInput())
 		return true;
 #endif
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	if (!platformMenuCursorVisible())
 		return true;
 	if (mc == nullptr || mc->gameSettings == nullptr || !mc->gameSettings->legacyUI)
@@ -545,8 +543,7 @@ void GuiScreen::handleConsoleJavaUiNavigation()
 	if (!isJavaUiKeyboardNavigationEnabled())
 		return;
 
-	const bool suppressPointerInput = mc != nullptr && mc->currentScreen != nullptr &&
-		mc->currentScreen->suppressesPlatformPointerInput();
+	const bool suppressPointerInput = menuPointerInputSuppressed(mc, this);
 
 #if PLATFORM_WII
 	if (!suppressPointerInput && platformMenuPointerActive())

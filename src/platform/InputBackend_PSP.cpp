@@ -84,14 +84,14 @@ PlatformGamepadSnapshot platformGamepadSnapshot(int port)
             if (!(s_lastButtons & PSP_CTRL_TRIANGLE)) s_holdStartTickY = nowMs;
             uint32_t duration = nowMs - s_holdStartTickY;
             float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
-            out.rightY -= ramp;
+            out.rightY += ramp;
         }
         else if (lookDown && !lookUp)
         {
             if (!(s_lastButtons & PSP_CTRL_CROSS)) s_holdStartTickY = nowMs;
             uint32_t duration = nowMs - s_holdStartTickY;
             float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
-            out.rightY += ramp;
+            out.rightY -= ramp;
         }
 
         s_lastButtons = pad.held;

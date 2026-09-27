@@ -23,6 +23,7 @@ namespace
     {
         if (std::abs(value) < deadzone)
             return 0.0f;
+        value = std::max(-1.0f, std::min(1.0f, value));
         float sign = (value > 0.0f) ? 1.0f : -1.0f;
         return sign * ((std::abs(value) - deadzone) / (1.0f - deadzone));
     }
@@ -38,15 +39,21 @@ namespace PspPadState
         s_cursorY = 136;
         s_lastButtons = 0;
         s_latchedPressed = 0;
+        s_snapshot.connected = true;
+        s_snapshot.held = 0;
+        s_snapshot.pressed = 0;
+        s_snapshot.released = 0;
+        s_snapshot.leftX = 0.0f;
+        s_snapshot.leftY = 0.0f;
         lwjgl::Mouse::detail::pushMotion(240, 136, 0, 0);
     }
 
     void update()
     {
+        s_snapshot.connected = true;
         SceCtrlData pad;
         if (sceCtrlPeekBufferPositive(&pad, 1) > 0)
         {
-            s_snapshot.connected = true;
             s_snapshot.held = pad.Buttons;
 
             std::uint32_t newlyPressed = pad.Buttons & ~s_lastButtons;
@@ -191,10 +198,16 @@ namespace PspPadState
                 if (newlyPressed & PSP_CTRL_RIGHT)
                     lwjgl::Mouse::detail::pushWheel(-1, 0, 0);
 
-                // Select: Open / Close Inventory (E / Key 18) or F5 if L is held
+                // Select: Open / Close Inventory (E / Key 18), F3 if R is held, or F5 if L is held
                 if (newlyPressed & PSP_CTRL_SELECT)
                 {
-                    if (pad.Buttons & PSP_CTRL_LTRIGGER)
+                    if (pad.Buttons & PSP_CTRL_RTRIGGER)
+                    {
+                        lwjgl::Mouse::detail::pushButton(0, false, 0, 0);
+                        lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F3, true);
+                        lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F3, false);
+                    }
+                    else if (pad.Buttons & PSP_CTRL_LTRIGGER)
                     {
                         lwjgl::Keyboard::detail::pushKey(63, true);
                         lwjgl::Keyboard::detail::pushKey(63, false);
@@ -215,10 +228,6 @@ namespace PspPadState
                 if (released & PSP_CTRL_START)
                     lwjgl::Keyboard::detail::pushKey(1, false);
             }
-        }
-        else
-        {
-            s_snapshot.connected = false;
         }
     }
 

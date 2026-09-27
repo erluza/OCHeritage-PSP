@@ -356,11 +356,11 @@ void Entity::preparePlayerToSpawn()
 	} while (true);
 	motionX = motionY = motionZ = 0.0;
 	rotationPitch = 0.0f;
-#ifdef PS2_PLATFORM
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 	// The spawn collision resolver above can move posY through several blocks
 	// using setPosition(), which deliberately does not update interpolation
 	// history. At desktop frame rates the stale prev/last position is barely
-	// visible; on the PS2 it can persist for an entire slow world frame and
+	// visible; on the PS2/PSP it can persist for an entire slow world frame and
 	// looks like the player is spawned in one place then falls/teleports.
 	prevPosX = lastTickPosX = posX;
 	prevPosY = lastTickPosY = posY;

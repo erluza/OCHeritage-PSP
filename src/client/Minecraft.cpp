@@ -2575,6 +2575,9 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
 
         platformMemoryCheckpoint("changeWorld pre-spawnChunks");
         world->spawnPlayerWithLoadedChunks(thePlayer);
+        thePlayer->preparePlayerToSpawn();
+        if (world->isNewWorld)
+            playerController->flipPlayer(thePlayer);
         platformMemoryCheckpoint("changeWorld post-spawnChunks");
         if (world->isNewWorld)
         {
@@ -2791,6 +2794,8 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
 
     playerController->flipPlayer(thePlayer);
     theWorld->spawnPlayerWithLoadedChunks(thePlayer);
+    thePlayer->preparePlayerToSpawn();
+    playerController->flipPlayer(thePlayer);
     thePlayer->movementInput = new MovementInputFromOptions(gameSettings);
     thePlayer->entityId      = j;
     thePlayer->handleItemUseFinish();
