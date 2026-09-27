@@ -1392,11 +1392,13 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
             targetTime = field_28133_I + (int64_t)(1000000000LL / limitFps);
         }
 
+#if !PLATFORM_PSP
         if (mc->isSplitScreenActive() && mc->thePlayer2 != nullptr)
         {
             renderSplitScreen(partialTicks, targetTime);
         }
         else
+#endif
         {
             renderWorld(partialTicks, targetTime);
 
@@ -1501,6 +1503,7 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
 
 void EntityRenderer::renderSplitScreen(float partialTicks, int64_t renderTimeLimitNano)
 {
+#if !PLATFORM_PSP
     EntityPlayerSP *entryPlayer = mc->thePlayer;
     EntityPlayerSP *p1 = mc->thePlayerOne ? mc->thePlayerOne : mc->thePlayer;
     EntityPlayerSP *p2 = mc->thePlayer2;
@@ -1612,6 +1615,10 @@ void EntityRenderer::renderSplitScreen(float partialTicks, int64_t renderTimeLim
         int midY = guiH / 2;
         Gui::drawRect(0, midY - 1, guiW, midY + 1, 0xFF000000);
     }
+#else
+    (void)partialTicks;
+    (void)renderTimeLimitNano;
+#endif
 }
 
 void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano)

@@ -122,10 +122,30 @@ public:
 
     NetClientHandler *getSendQueue();
 
-    bool isScreenOwnedByPlayer2() const;
-    void setScreenOwnedByPlayer2(bool val);
-    bool isSplitScreenActive() const;
-    void setSplitScreenActive(bool val);
+    bool isScreenOwnedByPlayer2() const
+#if PLATFORM_PSP
+    { return false; }
+#else
+    ;
+#endif
+    void setScreenOwnedByPlayer2(bool val)
+#if PLATFORM_PSP
+    { (void)val; }
+#else
+    ;
+#endif
+    bool isSplitScreenActive() const
+#if PLATFORM_PSP
+    { return false; }
+#else
+    ;
+#endif
+    void setSplitScreenActive(bool val)
+#if PLATFORM_PSP
+    { (void)val; }
+#else
+    ;
+#endif
 
     void displayPlayerScreen(int playerIndex, GuiScreen *screen);
     GuiScreen *getPlayerScreen(int playerIndex) const;

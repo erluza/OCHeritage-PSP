@@ -16,7 +16,7 @@
 #if !PLATFORM_PS2 && !PLATFORM_WII
 #include "SDL_clipboard.h"
 #endif
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #include "VirtualKeyboard.h"
 #include "ContainerSlotNavigator.h"
 #include "GuiContainer.h"
@@ -287,7 +287,7 @@ void GuiScreen::handleInput()
 		if (mc->currentScreen != this && mc->getPlayerScreen(0) != this && mc->getPlayerScreen(1) != this)
 			return;
 	}
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (mc != nullptr && mc->isSplitScreenActive() && (this == mc->getPlayerScreen(0) || this == mc->getPlayerScreen(1)))
 	{
 		handleSplitscreenPlayerInput();
@@ -301,7 +301,7 @@ void GuiScreen::handleInput()
 	VirtualKeyboard::instance().tick();
 	if (!platformTextInputExclusive())
 		ContainerSlotNavigator::instance(getOwnerPlayerIndex()).tick();
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	handleConsoleJavaUiNavigation();
 #endif
 #endif
@@ -370,7 +370,7 @@ bool GuiScreen::isJavaUiKeyboardNavigationEnabled() const
 		return false;
 	if (platformPadRebindExclusive() || platformContainerNavigationActive())
 		return false;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (platformTextInputExclusive())
 		return false;
 #endif

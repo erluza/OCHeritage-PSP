@@ -51,7 +51,7 @@ bool reservedCaptureKey(int_t key)
 
 std::string capturePrompt()
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     return uiText("Press a button...");
 #else
     return uiText("Press a key...");
@@ -270,7 +270,7 @@ void LegacyControlsScreen::keyTyped(char_t c, int_t key)
         if (reservedCaptureKey(key))
         {
             cancelCapture();
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
             // The reserved Back button is also a menu-navigation edge. Consume
             // the same latched press so it cannot immediately close Controls.
             (void)platformTextInputSnapshot(platformMenuPad());

@@ -3033,6 +3033,7 @@ NetClientHandler *Minecraft::getSendQueue()
     return nullptr;
 }
 
+#if !PLATFORM_PSP
 bool Minecraft::isScreenOwnedByPlayer2() const
 {
 #if PLATFORM_PS2
@@ -3060,3 +3061,5 @@ void Minecraft::setSplitScreenActive(bool val)
 {
     splitScreenActive = val;
 }
+#endif
+

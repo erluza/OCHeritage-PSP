@@ -159,49 +159,61 @@ namespace PspPadState
             }
             else // in gameplay
             {
-                // Square: Attack / Mine (Left Click / Button 0)
-                if (newlyPressed & PSP_CTRL_SQUARE)
+                // R Trigger: Attack / Mine (Left Click / Button 0)
+                if (newlyPressed & PSP_CTRL_RTRIGGER)
                     lwjgl::Mouse::detail::pushButton(0, true, 0, 0);
-                if (released & PSP_CTRL_SQUARE)
+                if (released & PSP_CTRL_RTRIGGER)
                     lwjgl::Mouse::detail::pushButton(0, false, 0, 0);
 
-                // Circle: Use Item / Place Block (Right Click / Button 1)
-                if (newlyPressed & PSP_CTRL_CIRCLE)
+                // L Trigger: Use Item / Place Block (Right Click / Button 1)
+                if (newlyPressed & PSP_CTRL_LTRIGGER)
                     lwjgl::Mouse::detail::pushButton(1, true, 0, 0);
-                if (released & PSP_CTRL_CIRCLE)
+                if (released & PSP_CTRL_LTRIGGER)
                     lwjgl::Mouse::detail::pushButton(1, false, 0, 0);
 
-                // Cross: Jump (Space / Key 57)
-                if (newlyPressed & PSP_CTRL_CROSS)
+                // D-Pad Up: Jump (Space / Key 57)
+                if (newlyPressed & PSP_CTRL_UP)
                     lwjgl::Keyboard::detail::pushKey(57, true);
-                if (released & PSP_CTRL_CROSS)
+                if (released & PSP_CTRL_UP)
                     lwjgl::Keyboard::detail::pushKey(57, false);
 
-                // Triangle: Open / Close Inventory (E / Key 18)
-                if (newlyPressed & PSP_CTRL_TRIANGLE)
-                    lwjgl::Keyboard::detail::pushKey(18, true);
-                if (released & PSP_CTRL_TRIANGLE)
-                    lwjgl::Keyboard::detail::pushKey(18, false);
+                // D-Pad Down: Sneak (LShift / Key 42)
+                if (newlyPressed & PSP_CTRL_DOWN)
+                    lwjgl::Keyboard::detail::pushKey(42, true);
+                if (released & PSP_CTRL_DOWN)
+                    lwjgl::Keyboard::detail::pushKey(42, false);
 
-                // L Trigger: Hotbar Previous (Wheel +1)
-                if (newlyPressed & PSP_CTRL_LTRIGGER)
+                // D-Pad Left: Hotbar Previous (Wheel +1)
+                if (newlyPressed & PSP_CTRL_LEFT)
                     lwjgl::Mouse::detail::pushWheel(1, 0, 0);
 
-                // R Trigger: Hotbar Next (Wheel -1)
-                if (newlyPressed & PSP_CTRL_RTRIGGER)
+                // D-Pad Right: Hotbar Next (Wheel -1)
+                if (newlyPressed & PSP_CTRL_RIGHT)
                     lwjgl::Mouse::detail::pushWheel(-1, 0, 0);
+
+                // Select: Open / Close Inventory (E / Key 18) or F5 if L is held
+                if (newlyPressed & PSP_CTRL_SELECT)
+                {
+                    if (pad.Buttons & PSP_CTRL_LTRIGGER)
+                    {
+                        lwjgl::Keyboard::detail::pushKey(63, true);
+                        lwjgl::Keyboard::detail::pushKey(63, false);
+                    }
+                    else
+                    {
+                        lwjgl::Keyboard::detail::pushKey(18, true);
+                    }
+                }
+                if (released & PSP_CTRL_SELECT)
+                {
+                    lwjgl::Keyboard::detail::pushKey(18, false);
+                }
 
                 // Start: Pause / Menu (Escape / Key 1)
                 if (newlyPressed & PSP_CTRL_START)
                     lwjgl::Keyboard::detail::pushKey(1, true);
                 if (released & PSP_CTRL_START)
                     lwjgl::Keyboard::detail::pushKey(1, false);
-
-                // Select: Sneak (LShift / Key 42)
-                if (newlyPressed & PSP_CTRL_SELECT)
-                    lwjgl::Keyboard::detail::pushKey(42, true);
-                if (released & PSP_CTRL_SELECT)
-                    lwjgl::Keyboard::detail::pushKey(42, false);
             }
         }
         else

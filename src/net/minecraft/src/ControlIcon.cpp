@@ -13,14 +13,14 @@
 ControlIcon controlIconTexture(Minecraft *mc, const std::string &label)
 {
     if (!mc || !mc->renderEngine || !mc->fontRenderer || label.empty()) return {};
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     struct Entry { const char *label; int_t cell; };
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     constexpr const char *path = "/gui/buttons_ps2.png";
     static constexpr Entry entries[] = {
         {"Cross", 0}, {"X", 0}, {"Circle", 1}, {"O", 1},
         {"Square", 2}, {"Triangle", 3}, {"D-Pad", 4},
-        {"L1", 5}, {"R1", 6}, {"L2", 7}, {"R2", 8},
+        {"L", 5}, {"L1", 5}, {"R", 6}, {"R1", 6}, {"L2", 7}, {"R2", 8},
         {"L3", 9}, {"R3", 10}, {"Select", 11}, {"Start", 12}
     };
 #else
@@ -95,7 +95,7 @@ void drawControlIcon(Minecraft *mc, ControlIcon icon, int_t x, int_t y)
 {
     if (!mc || !mc->renderEngine || icon.texture < 0) return;
     float u0 = 0, v0 = 0, u1 = 1, v1 = 1;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     int_t w = 0, h = 0;
     if (!mc->renderEngine->getTextureDimensions(icon.texture, &w, &h) || w <= 0 || h <= 0) return;
     // Sample inside the cell edges so filtering cannot bleed into its neighbors.

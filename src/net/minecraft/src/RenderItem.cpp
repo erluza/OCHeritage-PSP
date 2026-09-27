@@ -284,8 +284,13 @@ void RenderItem::renderItemIntoGUI(FontRenderer* fontrenderer, RenderEngine* ren
         renderengine->bindTexture(renderengine->getTexture("%blur%/misc/glint.png"));
         zLevel -= 50.0f;
         renderEnable(RenderCapability::Blend);
+#if PLATFORM_PSP
+        renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::One);
+        renderColor4f(0.55f, 0.25f, 0.85f, 0.5f);
+#else
         renderBlendFunc(RenderBlendFactor::DstColor, RenderBlendFactor::DstColor);
         renderColor4f(0.5f, 0.25f, 0.8f, 1.0f);
+#endif
         renderGuiItemGlint(i * 431278612 + j * 32178161, i - 2, j - 2, 20, 20);
         renderDisable(RenderCapability::Blend);
         renderDepthMask(true);
@@ -300,7 +305,12 @@ void RenderItem::renderGuiItemGlint(int seed, int x, int y, int width, int heigh
     (void)seed;
     Tessellator* tessellator = &Tessellator::instance;
     for (int pass = 0; pass < 2; ++pass) {
+#if PLATFORM_PSP
+        renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::One);
+        renderColor4f(0.55f, 0.25f, 0.85f, 0.5f);
+#else
         renderBlendFunc(RenderBlendFactor::SrcColor, RenderBlendFactor::One);
+#endif
 
         const float uScale = 0.00390625f;
         const float vScale = 0.00390625f;

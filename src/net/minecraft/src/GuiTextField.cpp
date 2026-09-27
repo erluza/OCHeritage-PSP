@@ -10,7 +10,7 @@
 #include "java/String.h"
 #include "pc/lwjgl/Keyboard.h"
 #include "platform/RenderAPI.h"
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 #include "VirtualKeyboard.h"
 #endif
 
@@ -390,7 +390,7 @@ void GuiTextField::setFocused(bool focused)
     isFocused = focused;
     if (parentGuiScreen != nullptr)
         parentGuiScreen->notifyTextFieldFocus(this, focused);
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
     VirtualKeyboard::instance().notifyFocus(this, focused);
 #endif
 }

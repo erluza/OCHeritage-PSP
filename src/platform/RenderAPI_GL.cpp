@@ -962,7 +962,7 @@ bool renderDrawInterleaved(const RenderInterleavedMesh& mesh)
     }
     else
     {
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glDisableClientState(GL_COLOR_ARRAY);
     }
     if (mesh.hasNormals)
     {

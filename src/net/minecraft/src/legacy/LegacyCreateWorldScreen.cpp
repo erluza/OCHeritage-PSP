@@ -109,7 +109,7 @@ void LegacyCreateWorldScreen::initGui()
     updateDifficultyControl();
     updateControlVisibility();
     selectControl(0);
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     // Preserve the console's existing initial text-entry behavior. Once the user
     // closes the keyboard, focus stays off until row 0 is activated again.
     textboxWorldName->setFocused(true);
@@ -124,6 +124,12 @@ void LegacyCreateWorldScreen::updateControlVisibility()
     worldTypeButton->enabled2 = moreOptions;
     if (worldSizeButton != nullptr)
         worldSizeButton->enabled2 = true;
+#if PLATFORM_PSP
+    if (worldSizeButton != nullptr)
+        worldSizeButton->enabled = false;
+    if (worldTypeButton != nullptr)
+        worldTypeButton->enabled = false;
+#endif
 }
 
 void LegacyCreateWorldScreen::updateDifficultyControl()
@@ -253,10 +259,14 @@ bool LegacyCreateWorldScreen::adjustSelection(int_t direction)
         return false;
     if (selectedControlIndex == 3 && worldSizeButton != nullptr)
     {
+#if PLATFORM_PSP
+        return false;
+#else
         limitedWorld = !limitedWorld;
         updateButtonText();
         mc->sndManager->playSoundFX("random.focus", 1.0f, 1.0f);
         return true;
+#endif
     }
     GuiButton *button = buttonForSelection(selectedControlIndex);
     if (button == nullptr || !button->enabled || !button->enabled2)

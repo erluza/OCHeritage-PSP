@@ -2,6 +2,7 @@
 
 #ifdef PSP_PLATFORM
 #include "psp/input/PspPadState.h"
+#include "platform/time.h"
 #include <pspctrl.h>
 
 namespace
@@ -53,10 +54,47 @@ PlatformGamepadSnapshot platformGamepadSnapshot(int port)
     Minecraft *mc = Minecraft::getMinecraft();
     if (mc != nullptr && mc->currentScreen == nullptr)
     {
-        if (pad.held & PSP_CTRL_LEFT)  out.rightX -= 1.0f;
-        if (pad.held & PSP_CTRL_RIGHT) out.rightX += 1.0f;
-        if (pad.held & PSP_CTRL_UP)    out.rightY -= 1.0f;
-        if (pad.held & PSP_CTRL_DOWN)  out.rightY += 1.0f;
+        static uint32_t s_holdStartTickX = 0;
+        static uint32_t s_holdStartTickY = 0;
+        static uint32_t s_lastButtons = 0;
+        const uint32_t nowMs = static_cast<uint32_t>(getTimeUS() / 1000ULL);
+
+        bool lookLeft = (pad.held & PSP_CTRL_SQUARE) != 0;
+        bool lookRight = (pad.held & PSP_CTRL_CIRCLE) != 0;
+        bool lookUp = (pad.held & PSP_CTRL_TRIANGLE) != 0;
+        bool lookDown = (pad.held & PSP_CTRL_CROSS) != 0;
+
+        if (lookLeft && !lookRight)
+        {
+            if (!(s_lastButtons & PSP_CTRL_SQUARE)) s_holdStartTickX = nowMs;
+            uint32_t duration = nowMs - s_holdStartTickX;
+            float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
+            out.rightX -= ramp;
+        }
+        else if (lookRight && !lookLeft)
+        {
+            if (!(s_lastButtons & PSP_CTRL_CIRCLE)) s_holdStartTickX = nowMs;
+            uint32_t duration = nowMs - s_holdStartTickX;
+            float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
+            out.rightX += ramp;
+        }
+
+        if (lookUp && !lookDown)
+        {
+            if (!(s_lastButtons & PSP_CTRL_TRIANGLE)) s_holdStartTickY = nowMs;
+            uint32_t duration = nowMs - s_holdStartTickY;
+            float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
+            out.rightY -= ramp;
+        }
+        else if (lookDown && !lookUp)
+        {
+            if (!(s_lastButtons & PSP_CTRL_CROSS)) s_holdStartTickY = nowMs;
+            uint32_t duration = nowMs - s_holdStartTickY;
+            float ramp = duration < 120 ? 0.35f : (duration < 250 ? 0.65f : 1.0f);
+            out.rightY += ramp;
+        }
+
+        s_lastButtons = pad.held;
     }
 
     return out;

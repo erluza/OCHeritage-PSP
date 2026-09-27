@@ -15,6 +15,7 @@
 #include "java/Random.h"
 #include "java/String.h"
 #include "pc/lwjgl/Keyboard.h"
+#include "platform/PlatformConfig.h"
 #include <algorithm>
 
 GuiCreateWorld::GuiCreateWorld(GuiScreen *parent)
@@ -31,7 +32,13 @@ GuiCreateWorld::GuiCreateWorld(GuiScreen *parent)
     , generateStructuresButton(nullptr)
     , worldTypeButton(nullptr)
     , worldSizeButton(nullptr)
-    , limitedWorld(false)
+    , limitedWorld(
+#if PLATFORM_PSP
+        true
+#else
+        false
+#endif
+    )
     , seed("")
     , localizedNewWorldText(StatCollector::translateToLocal("selectWorld.newWorld"))
     , worldTypeIndex(0)
@@ -73,6 +80,10 @@ void GuiCreateWorld::initGui()
     worldTypeButton->enabled2 = false;
     controlList.push_back(worldSizeButton = new GuiButton(7, width / 2 - 75, 125, 150, 20, ""));
     worldSizeButton->enabled2 = false;
+#if PLATFORM_PSP
+    worldTypeButton->enabled = false;
+    worldSizeButton->enabled = false;
+#endif
 
     delete textboxWorldName;
     textboxWorldName = new GuiTextField(this, fontRenderer, width / 2 - 100, 60, 200, 20, "");
@@ -227,13 +238,20 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
         worldTypeButton->enabled2 = moreOptions;
         if (worldSizeButton != nullptr)
             worldSizeButton->enabled2 = moreOptions;
+#if PLATFORM_PSP
+        worldTypeButton->enabled = false;
+        if (worldSizeButton != nullptr)
+            worldSizeButton->enabled = false;
+#endif
         moreWorldOptionsButton->displayString = StringTranslate::getInstance()->translateKey(
             moreOptions ? "gui.done" : "selectWorld.moreWorldOptions");
     }
     else if (button->id == 7)
     {
+#if !PLATFORM_PSP
         limitedWorld = !limitedWorld;
         updateButtonText();
+#endif
     }
     else if (button->id == 2)
     {
@@ -261,6 +279,7 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
     }
     else if (button->id == 5)
     {
+#if !PLATFORM_PSP
         do
         {
             ++worldTypeIndex;
@@ -270,6 +289,7 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
         while (WorldType::worldTypes[worldTypeIndex] == nullptr ||
                !WorldType::worldTypes[worldTypeIndex]->getCanBeCreated());
         updateButtonText();
+#endif
     }
 }
 
