@@ -1,3 +1,4 @@
+#include "net/minecraft/src/UiStrings.h"
 #include "GuiIngame.h"
 #include "mods/ModManager.h"
 #include "platform/PlatformTuning.h"
@@ -9,7 +10,7 @@
 #include "EntityPlayerSP.h"
 #include "GuiPlayerInfo.h"
 #include "NetClientHandler.h"
-#ifdef WII_PLATFORM
+#if defined(WII_PLATFORM) || defined(PS2_PLATFORM)
 #include "NetworkManager.h"
 #endif
 #include "EntityClientPlayerMP.h"
@@ -259,10 +260,21 @@ void GuiIngame::renderFpsOverlay(FontRenderer *fontRenderer)
 	if (fpsLine.empty())
 		fpsLine = "0 fps";
 
-#ifdef PS2_PLATFORM
-	fontRenderer->drawString(fpsLine, 2, 2, 0xe0e0e0);
+	// [FIX WII / ISSUE #9] Margen de seguridad para televisores (Title Safe Area).
+	// En televisores analógicos, CRT o convertidores HDMI que aplican overscan, las coordenadas (2, 2)
+	// quedan tapadas por el borde físico de la pantalla. Añadimos un margen seguro de 12px en consolas.
+#if defined(WII_PLATFORM) || defined(PS2_PLATFORM)
+	constexpr int_t safeX = 12;
+	constexpr int_t safeY = 12;
 #else
-	fontRenderer->drawStringWithShadow(fpsLine, 2, 2, 0xffffff);
+	constexpr int_t safeX = 2;
+	constexpr int_t safeY = 2;
+#endif
+
+#ifdef PS2_PLATFORM
+	fontRenderer->drawString(fpsLine, safeX, safeY, 0xe0e0e0);
+#else
+	fontRenderer->drawStringWithShadow(fpsLine, safeX, safeY, 0xffffff);
 #endif
 }
 
@@ -301,45 +313,60 @@ void GuiIngame::renderDebugOverlay(FontRenderer *fontRenderer, int_t screenWidth
 	fontRenderer->drawString(positionLine, 2, 52, color);
 	fontRenderer->endTextBatch();
 #else
-	fontRenderer->drawStringWithShadow("OptiCraft (" + mc->debug + ")", 2, 2, 0xffffff);
-	fontRenderer->drawStringWithShadow(mc->getDebugLine1(), 2, 12, 0xffffff);
-	fontRenderer->drawStringWithShadow(mc->getDebugLine2(), 2, 22, 0xffffff);
-	fontRenderer->drawStringWithShadow(mc->getDebugLine3(), 2, 32, 0xffffff);
-	fontRenderer->drawStringWithShadow(mc->getDebugLine4(), 2, 42, 0xffffff);
-	std::string cpuGpuLine = "CPU: " + std::to_string((int_t)(mc->cpuUsagePercent + 0.5f)) + "% GPU: "
+	// [FIX WII / ISSUE #9] Margen de seguridad contra Overscan en el menú F3 para Nintendo Wii.
+	// Se desplaza la columna izquierda a 12px y el margen derecho a 12px para evitar recortes en la TV.
+#if defined(WII_PLATFORM)
+	constexpr int_t safeLeft = 12;
+	constexpr int_t safeTop = 10;
+	constexpr int_t safeRightMargin = 12;
+#else
+	constexpr int_t safeLeft = 2;
+	constexpr int_t safeTop = 2;
+	constexpr int_t safeRightMargin = 2;
+#endif
+
+	fontRenderer->drawStringWithShadow("OptiCraft (" + mc->debug + ")", safeLeft, safeTop, 0xffffff);
+	fontRenderer->drawStringWithShadow(mc->getDebugLine1(), safeLeft, safeTop + 10, 0xffffff);
+	fontRenderer->drawStringWithShadow(mc->getDebugLine2(), safeLeft, safeTop + 20, 0xffffff);
+	fontRenderer->drawStringWithShadow(mc->getDebugLine3(), safeLeft, safeTop + 30, 0xffffff);
+	fontRenderer->drawStringWithShadow(mc->getDebugLine4(), safeLeft, safeTop + 40, 0xffffff);
+	std::string cpuGpuLine = uiText("CPU: ") + std::to_string((int_t)(mc->cpuUsagePercent + 0.5f)) + "% GPU: "
 	    + std::to_string((int_t)(mc->gpuUsagePercent + 0.5f)) + "%";
-	fontRenderer->drawStringWithShadow(cpuGpuLine, 2, 52, 0xffffff);
+	fontRenderer->drawStringWithShadow(cpuGpuLine, safeLeft, safeTop + 50, 0xffffff);
 	Runtime &runtime = Runtime::getRuntime();
 	long_t maxMemory = runtime.maxMemory();
 	long_t totalMemory = runtime.totalMemory();
 	long_t freeMemory = runtime.freeMemory();
 	long_t usedMemory = totalMemory - freeMemory;
-	std::string memoryUsed = "Used memory: " + std::to_string((usedMemory * 100LL) / maxMemory) + "% ("
-	    + std::to_string(usedMemory / 1024LL / 1024LL) + "MB) of "
+	std::string memoryUsed = uiText("Used memory: ") + std::to_string((usedMemory * 100LL) / maxMemory) + "% ("
+	    + std::to_string(usedMemory / 1024LL / 1024LL) + uiText("MB) of ")
 	    + std::to_string(maxMemory / 1024LL / 1024LL) + "MB";
-	drawString(fontRenderer, memoryUsed, screenWidth - fontRenderer->getStringWidth(memoryUsed) - 2, 2, 0xe0e0e0);
-	std::string memoryAllocated = "Allocated memory: " + std::to_string((totalMemory * 100LL) / maxMemory) + "% ("
+	drawString(fontRenderer, memoryUsed, screenWidth - fontRenderer->getStringWidth(memoryUsed) - safeRightMargin, safeTop, 0xe0e0e0);
+	std::string memoryAllocated = uiText("Allocated memory: ") + std::to_string((totalMemory * 100LL) / maxMemory) + "% ("
 	    + std::to_string(totalMemory / 1024LL / 1024LL) + "MB)";
-	drawString(fontRenderer, memoryAllocated, screenWidth - fontRenderer->getStringWidth(memoryAllocated) - 2, 12, 0xe0e0e0);
-	drawString(fontRenderer, "x: " + std::to_string(mc->thePlayer->posX), 2, 64, 0xe0e0e0);
-	drawString(fontRenderer, "y: " + std::to_string(mc->thePlayer->posY), 2, 72, 0xe0e0e0);
-	drawString(fontRenderer, "z: " + std::to_string(mc->thePlayer->posZ), 2, 80, 0xe0e0e0);
-	drawString(fontRenderer, "f: " + std::to_string(MathHelper::floor_float((mc->thePlayer->rotationYaw * 4.0f) / 360.0f + 0.5f) & 3), 2, 88, 0xe0e0e0);
-#ifdef WII_PLATFORM
-	drawString(fontRenderer, platformInputDebugLine(), 2, 96, 0xe0e0e0);
+	drawString(fontRenderer, memoryAllocated, screenWidth - fontRenderer->getStringWidth(memoryAllocated) - safeRightMargin, safeTop + 10, 0xe0e0e0);
+	drawString(fontRenderer, "x: " + std::to_string(mc->thePlayer->posX), safeLeft, safeTop + 62, 0xe0e0e0);
+	drawString(fontRenderer, "y: " + std::to_string(mc->thePlayer->posY), safeLeft, safeTop + 70, 0xe0e0e0);
+	drawString(fontRenderer, "z: " + std::to_string(mc->thePlayer->posZ), safeLeft, safeTop + 78, 0xe0e0e0);
+	drawString(fontRenderer, "f: " + std::to_string(MathHelper::floor_float((mc->thePlayer->rotationYaw * 4.0f) / 360.0f + 0.5f) & 3), safeLeft, safeTop + 86, 0xe0e0e0);
+#if defined(WII_PLATFORM) || defined(PS2_PLATFORM)
+	drawString(fontRenderer, platformInputDebugLine(), safeLeft, safeTop + 94, 0xe0e0e0);
 	WorldClient *multiplayerWorld = dynamic_cast<WorldClient *>(mc->theWorld);
 	if (multiplayerWorld != nullptr)
 	{
-		char multiplayerLine[112];
+		char multiplayerLine[160];
 		std::snprintf(multiplayerLine, sizeof(multiplayerLine),
-			"MP cache:%zu %zuKB ev:%lu pr:%lu pend:%zu ov:%lu",
+			"MP cache:%zu %zuKB ev:%lu pr:%lu pend:%zu E:%zu/%zu/%zu ep:%lu",
 			multiplayerWorld->getDeferredChunkCount(),
 			multiplayerWorld->getDeferredChunkBytes() / 1024u,
 			(unsigned long)multiplayerWorld->getDeferredChunkEvictions(),
 			(unsigned long)multiplayerWorld->getDeferredChunkPromotions(),
 			multiplayerWorld->getDeferredPromotionPendingCount(),
-			(unsigned long)multiplayerWorld->getDeferredChunkBudgetOverflows());
-		drawString(fontRenderer, multiplayerLine, 2, 106, 0xe0e0e0);
+			multiplayerWorld->getPendingEntitySpawnCount(),
+			multiplayerWorld->getKnownEntityCount(),
+			multiplayerWorld->getLoadedEntityList().size(),
+			(unsigned long)multiplayerWorld->getDeferredEntityChunkPromotions());
+		drawString(fontRenderer, multiplayerLine, safeLeft, safeTop + 104, 0xe0e0e0);
 
 		EntityClientPlayerMP *multiplayerPlayer = dynamic_cast<EntityClientPlayerMP *>(mc->thePlayer);
 		NetClientHandler *handler = multiplayerPlayer != nullptr ? multiplayerPlayer->sendQueue : nullptr;
@@ -348,13 +375,14 @@ void GuiIngame::renderDebugOverlay(FontRenderer *fontRenderer, int_t screenWidth
 		{
 			char packetLine[112];
 			std::snprintf(packetLine, sizeof(packetLine),
-				"NET 50+:%lu 50-:%lu 51:%lu q:%zu/%zuKB",
+				"NET 50+:%lu 50-:%lu 51:%lu q:%zu/%zuKB rxE:%u",
 				handler->getPreChunkLoadCount(),
 				handler->getPreChunkUnloadCount(),
 				handler->getMapChunkCount(),
 				networkManager->getReadQueuePacketCount(),
-				networkManager->getReadQueueByteLength() / 1024u);
-			drawString(fontRenderer, packetLine, 2, 116, 0xe0e0e0);
+				networkManager->getReadQueueByteLength() / 1024u,
+				networkManager->getReceivedEntityPacketCount());
+			drawString(fontRenderer, packetLine, safeLeft, safeTop + 114, 0xe0e0e0);
 
 			char socketLine[112];
 			std::snprintf(socketLine, sizeof(socketLine),
@@ -363,7 +391,7 @@ void GuiIngame::renderDebugOverlay(FontRenderer *fontRenderer, int_t screenWidth
 				networkManager->getSocketSentByteCount() / 1024u,
 				networkManager->isReadThreadActive() ? 1 : 0,
 				networkManager->isWriteThreadActive() ? 1 : 0);
-			drawString(fontRenderer, socketLine, 2, 126, 0xe0e0e0);
+			drawString(fontRenderer, socketLine, safeLeft, safeTop + 124, 0xe0e0e0);
 		}
 	}
 #endif
@@ -390,11 +418,11 @@ void GuiIngame::renderBossHealth()
 	constexpr int_t y = 12;
 
 	drawTexturedModalRect(x, y, 0, 74, barWidth, 5);
-	drawTexturedModalRect(x, y, 0, 74, barWidth, 5);
+	// [FIX WII] Se eliminó la segunda llamada duplicada idéntica 'drawTexturedModalRect(x, y, 0, 74, barWidth, 5);' para evitar sobrecarga y emisión de vértices redundantes en el Tessellator.
 	if (filled > 0)
 		drawTexturedModalRect(x, y, 0, 79, filled, 5);
 
-	const std::string name = "Boss health";
+	const std::string name = uiText("Boss health");
 	fontRenderer->drawStringWithShadow(name, screenWidth / 2 - fontRenderer->getStringWidth(name) / 2, y - 10, 0xff00ff);
 	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	renderBindTexture(mc->renderEngine->getTexture("/gui/icons.png"));
@@ -614,6 +642,14 @@ void GuiIngame::pcLegacyRenderPlayerStatusHud(int_t sw, int_t sh)
 #ifdef PS2_PLATFORM
 void GuiIngame::ps2RenderHotbarFrame(int_t sw, int_t sh, int_t currentItem)
 {
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		zLevel = -90.0f;
+		drawTexturedModalRect(sw / 2 - 91, sh - 22, 0, 0, 182, 22);
+		drawTexturedModalRect((sw / 2 - 91 - 1) + currentItem * 20, sh - 23, 0, 22, 24, 22);
+		return;
+	}
+
 	Ps2HudCache &cache = *ps2HudCache;
 	const bool needsCompile = !cache.hotbarValid || cache.hotbarWidth != sw ||
 		cache.hotbarHeight != sh || cache.hotbarItem != currentItem;
@@ -645,6 +681,13 @@ void GuiIngame::ps2RenderHotbarFrame(int_t sw, int_t sh, int_t currentItem)
 
 void GuiIngame::ps2RenderCrosshair(int_t sw, int_t sh)
 {
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		zLevel = -90.0f;
+		drawTexturedModalRect(sw / 2 - 7, sh / 2 - 7, 0, 0, 16, 16);
+		return;
+	}
+
 	Ps2HudCache &cache = *ps2HudCache;
 	const bool needsCompile = !cache.crosshairValid || cache.crosshairWidth != sw || cache.crosshairHeight != sh;
 	if (needsCompile)
@@ -671,6 +714,12 @@ void GuiIngame::ps2RenderCrosshair(int_t sw, int_t sh)
 
 void GuiIngame::ps2RenderPlayerStatusHud(int_t sw, int_t sh)
 {
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		renderPlayerStatusHudUncached(sw, sh);
+		return;
+	}
+
 	Ps2HudCache &cache = *ps2HudCache;
 	const PcLegacyHudStatusState state = makeHudStatusState(mc);
 	if (!pcLegacyCanCacheHudStatus(state))
@@ -735,7 +784,8 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	renderBindTexture(mc->renderEngine->getTexture("/gui/gui.png"));
 	InventoryPlayer *inv = mc->thePlayer->inventory;
-	const int_t hudBottomInset = mc->gameSettings->legacyUI ? legacyHudBottomInset() : 0;
+	const bool isSplit = mc->isSplitScreenActive();
+	const int_t hudBottomInset = mc->gameSettings->legacyUI ? legacyHudBottomInset(isSplit) : 0;
 	const int_t hudHeight = sh - hudBottomInset;
 #if PLATFORM_PC_LEGACY
 	pcLegacyRenderHotbarFrame(sw, hudHeight, inv->currentItem);
@@ -747,23 +797,27 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	drawTexturedModalRect((sw / 2 - 91 - 1) + inv->currentItem * 20, hudHeight - 22 - 1, 0, 22, 24, 22);
 #endif
 
-	renderBindTexture(mc->renderEngine->getTexture("/gui/icons.png"));
-	renderEnable(RenderCapability::Blend);
-	renderBlendFunc(RenderBlendFactor::OneMinusDstColor, RenderBlendFactor::OneMinusSrcColor);
+	if (!showDebug)
+	{
+		renderBindTexture(mc->renderEngine->getTexture("/gui/icons.png"));
+		renderEnable(RenderCapability::Blend);
+		renderBlendFunc(RenderBlendFactor::OneMinusDstColor, RenderBlendFactor::OneMinusSrcColor);
 #if PLATFORM_PC_LEGACY
-	pcLegacyRenderCrosshair(sw, sh);
+		pcLegacyRenderCrosshair(sw, sh);
 #elif defined(PS2_PLATFORM)
-	ps2RenderCrosshair(sw, sh);
+		ps2RenderCrosshair(sw, sh);
 #else
-	drawTexturedModalRect(sw / 2 - 7, sh / 2 - 7, 0, 0, 16, 16);
+		drawTexturedModalRect(sw / 2 - 7, sh / 2 - 7, 0, 0, 16, 16);
 #endif
-	renderEnable(RenderCapability::Blend);
-	renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
-	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+		renderEnable(RenderCapability::Blend);
+		renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+		renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	}
 
 	renderBossHealth();
 
-	if (mc->playerController->shouldDrawHUD())
+	// [FIX DEFENSIVO] Verificación contra nullptr en mc->playerController antes de consultar shouldDrawHUD()
+	if (mc->playerController != nullptr && mc->playerController->shouldDrawHUD())
 	{
 		renderEnable(RenderCapability::Blend);
 		renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
@@ -809,7 +863,8 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 		renderEnable(RenderCapability::DepthTest);
 	}
 
-	if (mc->playerController->func_35642_f() && mc->thePlayer->experienceLevel > 0)
+	// [FIX DEFENSIVO] Verificación contra nullptr en mc->playerController
+	if (mc->playerController != nullptr && mc->playerController->func_35642_f() && mc->thePlayer->experienceLevel > 0)
 	{
 		const std::string level = std::to_string(mc->thePlayer->experienceLevel);
 		const int_t color = 0x80ff20;
@@ -890,7 +945,8 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	renderPopMatrix();
 
 	EntityClientPlayerMP *clientPlayer = dynamic_cast<EntityClientPlayerMP *>(mc->thePlayer);
-	if (clientPlayer != nullptr && mc->gameSettings->keyBindPlayerList->pressed && clientPlayer->sendQueue != nullptr)
+	if (clientPlayer != nullptr && mc->gameSettings->keyBindPlayerList != nullptr &&
+	    mc->gameSettings->keyBindPlayerList->pressed && clientPlayer->sendQueue != nullptr)
 	{
 		NetClientHandler *handler = clientPlayer->sendQueue;
 		const std::vector<GuiPlayerInfo *> &players = handler->getPlayerNames();
@@ -943,7 +999,8 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	const std::uint32_t cycHudHints = platformProfileRenderPhaseBegin();
 #endif
 	LegacyControlTooltipHud::render(mc, sw, sh);
-	LegacyTipHud::render(mc, sw, sh);
+	if (!mc->isSplitScreenActive())
+		LegacyTipHud::render(mc, sw, sh);
 #if PLATFORM_PROFILE_RENDER_PHASES
 	platformProfileRenderPhaseEnd(cycHudHints, PlatformRenderPhase::HudHints);
 #endif
@@ -1158,7 +1215,7 @@ ChatClickData *GuiIngame::getChatClickData(int_t rawMouseX, int_t rawMouseY)
 
 void GuiIngame::setRecordPlayingMessage(const std::string &record)
 {
-	recordPlaying = "Now playing: " + record;
+	recordPlaying = uiText("Now playing: ") + record;
 	recordPlayingUpFor = 60;
 	field_22065_l = true;
 }

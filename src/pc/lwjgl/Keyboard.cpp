@@ -398,8 +398,10 @@ bool next()
 
 void clearEvents()
 {
+	detail::flushRetained();
 	while (!detail::event_queue.empty())
 		detail::event_queue.pop();
+	detail::has_retained_event = false;
 	detail::event_current = {};
 }
 

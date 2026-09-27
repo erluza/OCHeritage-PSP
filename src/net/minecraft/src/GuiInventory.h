@@ -26,6 +26,7 @@ protected:
 private:
 	void displayDebuffEffects();
 
+	EntityPlayer *inventoryPlayer;
 	float_t xSize_lo;
 	float_t ySize_lo;
 };

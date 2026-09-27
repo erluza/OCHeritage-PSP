@@ -109,6 +109,8 @@ public:
 	// Offline/LAN multiplayer identity. Kept in options.txt so console builds do
 	// not need command-line arguments to choose a player name.
 	std::string playerName;
+	std::string selectedSkin;
+	std::string selectedSkinP2;
 	bool legacyUI;
 	bool legacyLook;
 	int_t renderBackend;
@@ -125,6 +127,7 @@ public:
 	// Wii only: vertical deflicker filter on the display copy (see gx_wii.cpp).
 	bool wiiDeflicker;
 	bool widescreen;
+	bool splitscreenVertical;
 	bool field_22275_C;
 	bool smoothCamera;
 	bool field_22273_E;

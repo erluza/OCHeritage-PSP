@@ -25,7 +25,7 @@
 InventoryBasic GuiContainerCreative::inventory("tmp", 72, false);
 
 GuiContainerCreative::GuiContainerCreative(EntityPlayer *player)
-    : GuiContainer(new ContainerCreative(player), true)
+    : GuiContainer(new ContainerCreative(player), true, player)
     , currentScroll(0.0f)
     , isScrolling(false)
     , wasClicking(false)
@@ -45,7 +45,12 @@ void GuiContainerCreative::updateScreen()
 {
     if (!mc->playerController->isInCreativeMode())
     {
-        mc->displayGuiScreen(new GuiInventory(mc->thePlayer));
+        EntityPlayer *p = getContainerPlayer();
+        if (p == nullptr && mc != nullptr) p = mc->thePlayer;
+        if (mc != nullptr && mc->isSplitScreenActive())
+            mc->displayPlayerScreen(getOwnerPlayerIndex(), new GuiInventory(p ? p : mc->thePlayer));
+        else
+            mc->displayGuiScreen(new GuiInventory(p ? p : mc->thePlayer));
         return;
     }
     GuiContainer::updateScreen();
@@ -53,7 +58,11 @@ void GuiContainerCreative::updateScreen()
 
 void GuiContainerCreative::handleMouseClick(Slot *slot, int_t slotId, int_t button, bool shift)
 {
-    InventoryPlayer *playerInventory = mc->thePlayer->inventory;
+    EntityPlayer *p = getContainerPlayer();
+    if (p == nullptr && mc != nullptr) p = mc->thePlayer;
+    if (p == nullptr) return;
+    InventoryPlayer *playerInventory = p->inventory;
+    if (playerInventory == nullptr) return;
 
     if (slot != nullptr)
     {
@@ -100,7 +109,7 @@ void GuiContainerCreative::handleMouseClick(Slot *slot, int_t slotId, int_t butt
             return;
         }
 
-        inventorySlots->slotClick(slot->slotNumber, button, shift, mc->thePlayer);
+        inventorySlots->slotClick(slot->slotNumber, button, shift, p);
         ItemStack *stack = inventorySlots->getSlot(slot->slotNumber)->getStack();
         int_t packetSlot = slot->slotNumber - (int_t)inventorySlots->slots.size() + 45;
         mc->playerController->sendSlotPacket(stack, packetSlot);
@@ -114,13 +123,13 @@ void GuiContainerCreative::handleMouseClick(Slot *slot, int_t slotId, int_t butt
     if (button == 0)
     {
         playerInventory->setItemStack(nullptr);
-        mc->thePlayer->dropPlayerItem(held);
+        p->dropPlayerItem(held);
         mc->playerController->sendPacketDropItem(held);
     }
     else if (button == 1)
     {
         ItemStack *dropped = held->splitStack(1);
-        mc->thePlayer->dropPlayerItem(dropped);
+        p->dropPlayerItem(dropped);
         mc->playerController->sendPacketDropItem(dropped);
         if (held->stackSize == 0)
         {
@@ -134,7 +143,12 @@ void GuiContainerCreative::initGui()
 {
     if (!mc->playerController->isInCreativeMode())
     {
-        mc->displayGuiScreen(new GuiInventory(mc->thePlayer));
+        EntityPlayer *p = getContainerPlayer();
+        if (p == nullptr && mc != nullptr) p = mc->thePlayer;
+        if (mc != nullptr && mc->isSplitScreenActive())
+            mc->displayPlayerScreen(getOwnerPlayerIndex(), new GuiInventory(p ? p : mc->thePlayer));
+        else
+            mc->displayGuiScreen(new GuiInventory(p ? p : mc->thePlayer));
         return;
     }
 

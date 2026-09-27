@@ -135,6 +135,11 @@ void LegacyOptionsScreen::updateScreen()
     GuiScreen::updateScreen();
     syncLegacySelection();
 #if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
+    // A focused GuiTextField gives the virtual keyboard exclusive ownership of
+    // these buttons. Do not move or activate the menu underneath the overlay.
+    if (platformTextInputExclusive())
+        return;
+
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
 #if PLATFORM_PS2 || PLATFORM_PSP
     std::uint32_t pressed = pad.pressed;
@@ -222,5 +227,5 @@ void LegacyOptionsScreen::drawLegacyBackground(float_t partialTick)
         panelRenderer.draw(legacyLayout);
 
     syncLegacySelection();
-    drawLegacyMenuHints(fontRenderer, width, height, true);
+    drawLegacyMenuHints(mc, width, height, true);
 }

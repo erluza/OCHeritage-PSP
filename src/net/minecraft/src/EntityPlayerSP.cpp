@@ -1,6 +1,7 @@
 #include "EntityPlayerSP.h"
 
 #include "GameSettings.h"
+#include "skin/SkinManager.h"
 #include "GuiIngame.h"
 #include "Material.h"
 #include "MathHelper.h"
@@ -53,6 +54,13 @@ EntityPlayerSP::EntityPlayerSP(Minecraft *minecraft, World *world, Session *sess
 		if (!session->username.empty())
 			skinUrl = "http://s3.amazonaws.com/MinecraftSkins/" + session->username + ".png";
 		username = session->username;
+	}
+
+	const std::string activeSkin = SkinManager::getActiveSkinTexture();
+	if (!activeSkin.empty())
+	{
+		texture = activeSkin;
+		skinUrl = "";
 	}
 }
 
@@ -284,6 +292,19 @@ void EntityPlayerSP::readEntityFromNBT(NBTTagCompound *nbttagcompound)
 void EntityPlayerSP::closeScreen()
 {
 	EntityPlayer::closeScreen();
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		if (this == mc->thePlayer2)
+		{
+			mc->closePlayerScreen(1);
+			return;
+		}
+		else if (mc->isPlayerScreenActive(0))
+		{
+			mc->closePlayerScreen(0);
+			return;
+		}
+	}
 	mc->displayGuiScreen(nullptr);
 }
 
@@ -294,32 +315,68 @@ void EntityPlayerSP::displayGUIEditSign(TileEntitySign *tileentitysign)
 
 void EntityPlayerSP::displayGUIChest(IInventory *iinventory)
 {
-	mc->displayGuiScreen(new GuiChest(inventory, iinventory));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiChest(inventory, iinventory, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiChest(inventory, iinventory, this));
 }
 
 void EntityPlayerSP::displayWorkbenchGUI(int_t i, int_t j, int_t k)
 {
-	mc->displayGuiScreen(new GuiCrafting(inventory, worldObj, i, j, k));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiCrafting(inventory, worldObj, i, j, k, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiCrafting(inventory, worldObj, i, j, k, this));
 }
 
 void EntityPlayerSP::displayGUIFurnace(TileEntityFurnace *tileentityfurnace)
 {
-	mc->displayGuiScreen(new GuiFurnace(inventory, tileentityfurnace));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiFurnace(inventory, tileentityfurnace, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiFurnace(inventory, tileentityfurnace, this));
 }
 
 void EntityPlayerSP::displayGUIDispenser(TileEntityDispenser *tileentitydispenser)
 {
-	mc->displayGuiScreen(new GuiDispenser(inventory, tileentitydispenser));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiDispenser(inventory, tileentitydispenser, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiDispenser(inventory, tileentitydispenser, this));
 }
 
 void EntityPlayerSP::displayGUIEnchantment(int_t i, int_t j, int_t k)
 {
-	mc->displayGuiScreen(new GuiEnchantment(inventory, worldObj, i, j, k));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiEnchantment(inventory, worldObj, i, j, k, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiEnchantment(inventory, worldObj, i, j, k, this));
 }
 
 void EntityPlayerSP::displayGUIBrewingStand(TileEntityBrewingStand *tileentitybrewingstand)
 {
-	mc->displayGuiScreen(new GuiBrewingStand(inventory, tileentitybrewingstand));
+	if (mc != nullptr && mc->isSplitScreenActive())
+	{
+		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+		mc->displayPlayerScreen(pIdx, new GuiBrewingStand(inventory, tileentitybrewingstand, this));
+		return;
+	}
+	mc->displayGuiScreen(new GuiBrewingStand(inventory, tileentitybrewingstand, this));
 }
 
 void EntityPlayerSP::onCriticalHit(Entity *entity)

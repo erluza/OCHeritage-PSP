@@ -1,3 +1,4 @@
+#include "net/minecraft/src/UiStrings.h"
 #include "LegacyMainMenu.h"
 
 #include "LegacyGuiButton.h"
@@ -25,15 +26,16 @@ void legacyCreateMainMenuButtons(std::vector<GuiButton *> &controlList, GuiButto
     };
 
     StringTranslate *tr = StringTranslate::getInstance();
-    addButton(1, "Play Game");
+    addButton(1, uiText("Play Game"));
 #if !PLATFORM_PSP
     multiplayerButton = addButton(2, tr->translateKey("menu.multiplayer"));
 #else
     multiplayerButton = nullptr;
 #endif
-    addButton(3, "Mods");
-    addButton(0, "Help & Options");
-    addButton(5, "Language");
+    addButton(3, uiText("Mods"));
+    addButton(6, "Skins");
+    addButton(0, uiText("Help & Options"));
+    addButton(5, uiText("Language"));
     if (!hideQuitButton)
         addButton(4, tr->translateKey("menu.quit"));
 }

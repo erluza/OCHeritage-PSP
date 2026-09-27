@@ -1,3 +1,4 @@
+#include "net/minecraft/src/UiStrings.h"
 #include "LegacyHeritageOptions.h"
 
 #include "LegacyGuiButton.h"
@@ -12,9 +13,11 @@
 #include "net/minecraft/src/GuiButton.h"
 #include "net/minecraft/src/GuiDeadzoneSettings.h"
 #include "net/minecraft/src/GuiTextField.h"
+#include "net/minecraft/src/GuiTextFieldSelector.h"
 #include "net/minecraft/src/Minecraft.h"
 #include "net/minecraft/src/ScaledResolution.h"
 #include "net/minecraft/src/Session.h"
+#include "pc/lwjgl/Keyboard.h"
 #include "platform/PlatformConfig.h"
 #include "platform/PlatformUserSettings.h"
 
@@ -26,6 +29,8 @@ constexpr int_t BUTTON_LEGACY_LOOK = 605;
 constexpr int_t BUTTON_ALTERNATIVE_CONTROLS = 601;
 constexpr int_t BUTTON_DEADZONE = 602;
 constexpr int_t BUTTON_DONE = 600;
+constexpr int_t BUTTON_EDIT_PLAYER_NAME = 606;
+constexpr int_t BUTTON_SPLITSCREEN_LAYOUT = 607;
 
 }
 
@@ -48,6 +53,9 @@ void LegacyHeritageOptions::initGui()
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     ++rowCount;
 #endif
+#if PLATFORM_PS2
+    ++rowCount;
+#endif
 #ifdef WII_PLATFORM
     ++rowCount;
 #endif
@@ -68,6 +76,9 @@ void LegacyHeritageOptions::initGui()
         settings != nullptr ? settings->playerName : "Player");
     nameField->setMaxStringLength(16);
     nameField->setFocused(false);
+    controlList.push_back(new GuiTextFieldSelector(BUTTON_EDIT_PLAYER_NAME,
+        x + nameFieldInset, legacyLayout.rowY(row + 1),
+        std::max<int_t>(1, w - nameFieldInset * 2), h));
     row += 2;
 
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
@@ -75,26 +86,31 @@ void LegacyHeritageOptions::initGui()
         settings->getKeyBinding(EnumOptions::ASPECT_RATIO)));
 #endif
 
+#if PLATFORM_PS2
+    controlList.push_back(new LegacyGuiButton(BUTTON_SPLITSCREEN_LAYOUT, x, legacyLayout.rowY(row++), w, h,
+        settings->getKeyBinding(EnumOptions::SPLITSCREEN_LAYOUT)));
+#endif
+
     legacyUiCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_UI, x, legacyLayout.rowY(row++), w, h,
-        "Legacy UI", settings->legacyUI);
+        uiText("Legacy UI"), settings->legacyUI);
     controlList.push_back(legacyUiCheckbox);
 
     legacyLookCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_LOOK, x, legacyLayout.rowY(row++), w, h,
-        "Legacy Look", settings->legacyLook);
+        uiText("Legacy Look"), settings->legacyLook);
     controlList.push_back(legacyLookCheckbox);
 
 #ifdef WII_PLATFORM
     alternativeControlsCheckbox = new LegacyOptionCheckbox(BUTTON_ALTERNATIVE_CONTROLS, x,
-        legacyLayout.rowY(row++), w, h, "Alternative Controls", settings->alternativeControllerLayout);
+        legacyLayout.rowY(row++), w, h, uiText("Alternative Controls"), settings->alternativeControllerLayout);
     controlList.push_back(alternativeControlsCheckbox);
 #endif
 
 #if PLATFORM_HAS_CONTROLLER_CALIBRATION
     controlList.push_back(new LegacyGuiButton(BUTTON_DEADZONE, x, legacyLayout.rowY(row++), w, h,
-        "Deadzone Settings"));
+        uiText("Deadzone Settings")));
 #endif
 
-    controlList.push_back(new LegacyGuiButton(BUTTON_DONE, x, legacyLayout.rowY(row), w, h, "Done"));
+    controlList.push_back(new LegacyGuiButton(BUTTON_DONE, x, legacyLayout.rowY(row), w, h, uiText("Done")));
 }
 
 void LegacyHeritageOptions::saveIdentity()
@@ -102,13 +118,14 @@ void LegacyHeritageOptions::saveIdentity()
     if (settings == nullptr)
         return;
     settings->playerName = sanitizeHeritagePlayerName(nameField != nullptr ? nameField->getText() : "");
+    if (nameField != nullptr)
+        nameField->setText(settings->playerName);
     if (mc != nullptr && mc->session != nullptr)
         mc->session->username = settings->playerName;
 }
 
 void LegacyHeritageOptions::saveAndClose()
 {
-    saveIdentity();
     returnToParent();
 }
 
@@ -127,10 +144,20 @@ void LegacyHeritageOptions::onGuiClosed()
 
 void LegacyHeritageOptions::keyTyped(char_t c, int_t key)
 {
+    if (nameField != nullptr && nameField->getFocused())
+    {
+        if (c == '\r' || key == lwjgl::Keyboard::KEY_RETURN)
+        {
+            saveIdentity();
+            settings->saveOptions();
+            nameField->setFocused(false);
+            return;
+        }
+        nameField->textboxKeyTyped(c, key);
+        return;
+    }
     if (handleLegacyNavigationKey(key))
         return;
-    if (nameField != nullptr)
-        nameField->textboxKeyTyped(c, key);
 }
 
 void LegacyHeritageOptions::mouseClicked(int_t x, int_t y, int_t button)
@@ -145,16 +172,34 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
     if (button == nullptr || !button->enabled || settings == nullptr)
         return;
 
+    if (button->id == BUTTON_EDIT_PLAYER_NAME)
+    {
+        if (nameField != nullptr)
+            nameField->setFocused(true);
+        return;
+    }
+
+    // Toggling an option may save or reconstruct the screen. Preserve the name
+    // before either operation so it cannot revert to the value loaded at entry.
+    saveIdentity();
+
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     if (button->id == BUTTON_ASPECT_RATIO)
     {
-        saveIdentity();
         settings->setOptionValue(EnumOptions::ASPECT_RATIO, 1);
         ScaledResolution sr(settings, mc->displayWidth, mc->displayHeight);
         setWorldAndResolution(mc, sr.getScaledWidth(), sr.getScaledHeight());
         return;
     }
 #endif
+
+    if (button->id == BUTTON_SPLITSCREEN_LAYOUT)
+    {
+        settings->setOptionValue(EnumOptions::SPLITSCREEN_LAYOUT, 1);
+        button->displayString = settings->getKeyBinding(EnumOptions::SPLITSCREEN_LAYOUT);
+        settings->saveOptions();
+        return;
+    }
 
     if (button->id == BUTTON_LEGACY_UI)
     {
@@ -198,7 +243,6 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
 #if PLATFORM_HAS_CONTROLLER_CALIBRATION
     if (button->id == BUTTON_DEADZONE)
     {
-        saveIdentity();
         settings->saveOptions();
         mc->displayGuiScreen(new GuiDeadzoneSettings(this, settings));
         return;
@@ -212,10 +256,16 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
     }
 }
 
+void LegacyHeritageOptions::returnToParent()
+{
+    saveIdentity();
+    LegacyOptionsScreen::returnToParent();
+}
+
 void LegacyHeritageOptions::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 {
     drawLegacyBackground(partialTick);
-    legacyDrawOptionText(fontRenderer, "Player Name", legacyLayout.contentX + 2,
+    legacyDrawOptionText(fontRenderer, uiText("Player Name"), legacyLayout.contentX + 2,
         legacyOptionTextY(legacyLayout.rowY(0), legacyLayout.rowHeight), legacyOptionNormalTextColor());
     if (nameField != nullptr)
         nameField->drawTextBox();
