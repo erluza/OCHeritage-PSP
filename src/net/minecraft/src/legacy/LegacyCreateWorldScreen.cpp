@@ -97,11 +97,11 @@ void LegacyCreateWorldScreen::initGui()
         layout.rowY(2), layout.contentWidth, layout.rowHeight, tr->translateKey("selectWorld.mapType")));
 
     delete textboxWorldName;
-    textboxWorldName = new GuiTextField(fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight);
+    textboxWorldName = new GuiTextField(this, fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight, "");
     textboxWorldName->setText(localizedNewWorldText);
 
     delete textboxSeed;
-    textboxSeed = new GuiTextField(fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight);
+    textboxSeed = new GuiTextField(this, fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight, "");
     textboxSeed->setText(seed);
 
     updateFolderName();
@@ -109,7 +109,7 @@ void LegacyCreateWorldScreen::initGui()
     updateDifficultyControl();
     updateControlVisibility();
     selectControl(0);
-#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
+#if PLATFORM_PS2 || PLATFORM_WII
     // Preserve the console's existing initial text-entry behavior. Once the user
     // closes the keyboard, focus stays off until row 0 is activated again.
     textboxWorldName->setFocused(true);
@@ -124,12 +124,6 @@ void LegacyCreateWorldScreen::updateControlVisibility()
     worldTypeButton->enabled2 = moreOptions;
     if (worldSizeButton != nullptr)
         worldSizeButton->enabled2 = true;
-#if PLATFORM_PSP
-    if (worldSizeButton != nullptr)
-        worldSizeButton->enabled = false;
-    if (worldTypeButton != nullptr)
-        worldTypeButton->enabled = false;
-#endif
 }
 
 void LegacyCreateWorldScreen::updateDifficultyControl()
@@ -209,8 +203,8 @@ void LegacyCreateWorldScreen::syncSelectedControl()
 void LegacyCreateWorldScreen::updatePointerHover(int_t mouseX, int_t mouseY)
 {
     int_t hover = -1;
-#if PLATFORM_PS2
-    // Legacy PS2 menus deliberately suppress the software mouse pointer. Treating
+#if PLATFORM_PS2 || PLATFORM_PSP
+    // Legacy PS2/PSP menus deliberately suppress the software mouse pointer. Treating
     // its stale coordinates as a live hover leaves D-pad navigation blocked after
     // the virtual keyboard closes.
     (void)mouseX;
@@ -219,7 +213,7 @@ void LegacyCreateWorldScreen::updatePointerHover(int_t mouseX, int_t mouseY)
     if (platformMenuPointerActive())
 #endif
     {
-#if !PLATFORM_PS2
+#if !PLATFORM_PS2 && !PLATFORM_PSP
         GuiTextField *field = moreOptions ? textboxSeed : textboxWorldName;
         if (field != nullptr && pointInside(mouseX, mouseY, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight))
         {
@@ -426,7 +420,7 @@ void LegacyCreateWorldScreen::keyTyped(char_t c, int_t key)
         mc->displayGuiScreen(parentScreen);
         return;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == 200)
     {
         moveSelection(-1);

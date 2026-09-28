@@ -103,7 +103,7 @@ bool LegacyOptionsScreen::handleLegacyNavigationKey(int_t key)
         returnToParent();
         return true;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == lwjgl::Keyboard::KEY_UP)
     {
         moveLegacySelection(-1);

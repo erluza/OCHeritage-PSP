@@ -80,10 +80,6 @@ void GuiCreateWorld::initGui()
     worldTypeButton->enabled2 = false;
     controlList.push_back(worldSizeButton = new GuiButton(7, width / 2 - 75, 125, 150, 20, ""));
     worldSizeButton->enabled2 = false;
-#if PLATFORM_PSP
-    worldTypeButton->enabled = false;
-    worldSizeButton->enabled = false;
-#endif
 
     delete textboxWorldName;
     textboxWorldName = new GuiTextField(this, fontRenderer, width / 2 - 100, 60, 200, 20, "");
@@ -238,11 +234,6 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
         worldTypeButton->enabled2 = moreOptions;
         if (worldSizeButton != nullptr)
             worldSizeButton->enabled2 = moreOptions;
-#if PLATFORM_PSP
-        worldTypeButton->enabled = false;
-        if (worldSizeButton != nullptr)
-            worldSizeButton->enabled = false;
-#endif
         moreWorldOptionsButton->displayString = StringTranslate::getInstance()->translateKey(
             moreOptions ? "gui.done" : "selectWorld.moreWorldOptions");
     }

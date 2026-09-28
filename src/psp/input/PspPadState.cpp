@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 
+#include "platform/time.h"
 #include "lwjgl/Mouse.h"
 #include "lwjgl/Keyboard.h"
 #include "net/minecraft/src/Minecraft.h"
@@ -99,14 +100,23 @@ namespace PspPadState
                 if (specializedNav)
                 {
                     // PS2-style specialized menu navigation:
-                    // Analog stick is mapped to D-pad navigation with repeat timer.
-                    // Pointer is NOT moved and mouse buttons are NOT pushed.
+                    // Analog stick and held D-pad map directly to platformTextInputSnapshot latches with repeat timer.
+                    // Pointer is NOT moved and mouse buttons / synthetic keyboard events are NOT pushed.
                     static int s_analogDir = 0;
                     static float s_analogRepeat = 0.0f;
-                    constexpr float NAV_ENTER = 0.55f;
-                    constexpr float NAV_RELEASE = 0.30f;
-                    constexpr float NAV_REPEAT_DELAY = 0.30f;
-                    constexpr float NAV_REPEAT_INTERVAL = 0.12f;
+                    static float s_dpadRepeat = 0.0f;
+                    static std::uint32_t s_lastHeldDpad = 0;
+                    static uint64_t s_lastMenuTimeUs = 0;
+
+                    uint64_t nowUs = getTimeUS();
+                    float dt = (s_lastMenuTimeUs == 0) ? 0.016f : static_cast<float>(nowUs - s_lastMenuTimeUs) / 1000000.0f;
+                    s_lastMenuTimeUs = nowUs;
+                    if (dt <= 0.0f || dt > 0.1f) dt = 0.016f;
+
+                    constexpr float MENU_NAV_ENTER_THRESHOLD = 0.60f;
+                    constexpr float MENU_NAV_RELEASE_THRESHOLD = 0.35f;
+                    constexpr float MENU_NAV_REPEAT_DELAY = 0.32f;
+                    constexpr float MENU_NAV_REPEAT_INTERVAL = 0.12f;
 
                     float absX = std::abs(s_snapshot.leftX);
                     float absY = std::abs(s_snapshot.leftY);
@@ -114,7 +124,7 @@ namespace PspPadState
                     if (s_analogDir != 0)
                     {
                         float activeAxis = (s_analogDir <= 2) ? absY : absX;
-                        if (activeAxis <= NAV_RELEASE)
+                        if (activeAxis <= MENU_NAV_RELEASE_THRESHOLD)
                         {
                             s_analogDir = 0;
                             s_analogRepeat = 0.0f;
@@ -124,69 +134,55 @@ namespace PspPadState
                     int newDir = 0;
                     if (s_analogDir == 0)
                     {
-                        if (absX >= NAV_ENTER || absY >= NAV_ENTER)
+                        if (absX >= MENU_NAV_ENTER_THRESHOLD || absY >= MENU_NAV_ENTER_THRESHOLD)
                         {
                             if (absY >= absX)
                                 newDir = (s_snapshot.leftY < 0.0f) ? 1 : 2; // 1: Up, 2: Down
                             else
                                 newDir = (s_snapshot.leftX < 0.0f) ? 3 : 4; // 3: Left, 4: Right
                             s_analogDir = newDir;
-                            s_analogRepeat = NAV_REPEAT_DELAY;
+                            s_analogRepeat = MENU_NAV_REPEAT_DELAY;
                         }
                     }
                     else
                     {
-                        s_analogRepeat -= 0.016f;
+                        s_analogRepeat -= dt;
                         if (s_analogRepeat <= 0.0f)
                         {
                             newDir = s_analogDir;
-                            s_analogRepeat = NAV_REPEAT_INTERVAL;
+                            s_analogRepeat = MENU_NAV_REPEAT_INTERVAL;
                         }
                     }
 
-                    if (newDir == 1) { s_latchedPressed |= PSP_CTRL_UP;    lwjgl::Keyboard::detail::pushKey(200, true); lwjgl::Keyboard::detail::pushKey(200, false); }
-                    if (newDir == 2) { s_latchedPressed |= PSP_CTRL_DOWN;  lwjgl::Keyboard::detail::pushKey(208, true); lwjgl::Keyboard::detail::pushKey(208, false); }
-                    if (newDir == 3) { s_latchedPressed |= PSP_CTRL_LEFT;  lwjgl::Keyboard::detail::pushKey(203, true); lwjgl::Keyboard::detail::pushKey(203, false); }
-                    if (newDir == 4) { s_latchedPressed |= PSP_CTRL_RIGHT; lwjgl::Keyboard::detail::pushKey(205, true); lwjgl::Keyboard::detail::pushKey(205, false); }
+                    if (newDir == 1) s_latchedPressed |= PSP_CTRL_UP;
+                    if (newDir == 2) s_latchedPressed |= PSP_CTRL_DOWN;
+                    if (newDir == 3) s_latchedPressed |= PSP_CTRL_LEFT;
+                    if (newDir == 4) s_latchedPressed |= PSP_CTRL_RIGHT;
 
-                    // D-Pad menu navigation
-                    if (newlyPressed & PSP_CTRL_UP)    { lwjgl::Keyboard::detail::pushKey(200, true); }
-                    if (released & PSP_CTRL_UP)        { lwjgl::Keyboard::detail::pushKey(200, false); }
-                    if (newlyPressed & PSP_CTRL_DOWN)  { lwjgl::Keyboard::detail::pushKey(208, true); }
-                    if (released & PSP_CTRL_DOWN)      { lwjgl::Keyboard::detail::pushKey(208, false); }
-                    if (newlyPressed & PSP_CTRL_LEFT)  { lwjgl::Keyboard::detail::pushKey(203, true); }
-                    if (released & PSP_CTRL_LEFT)      { lwjgl::Keyboard::detail::pushKey(203, false); }
-                    if (newlyPressed & PSP_CTRL_RIGHT) { lwjgl::Keyboard::detail::pushKey(205, true); }
-                    if (released & PSP_CTRL_RIGHT)     { lwjgl::Keyboard::detail::pushKey(205, false); }
-
-                    // Cross: Select / Confirm (Enter)
-                    if (newlyPressed & PSP_CTRL_CROSS)
+                    // D-Pad repeat when held in menus
+                    std::uint32_t heldDpad = pad.Buttons & (PSP_CTRL_UP | PSP_CTRL_DOWN | PSP_CTRL_LEFT | PSP_CTRL_RIGHT);
+                    if (heldDpad != 0)
                     {
-                        s_latchedPressed |= PSP_CTRL_CROSS;
-                        lwjgl::Keyboard::detail::pushKey(28, true);
+                        if (heldDpad != s_lastHeldDpad)
+                        {
+                            s_lastHeldDpad = heldDpad;
+                            s_dpadRepeat = MENU_NAV_REPEAT_DELAY;
+                        }
+                        else
+                        {
+                            s_dpadRepeat -= dt;
+                            if (s_dpadRepeat <= 0.0f)
+                            {
+                                s_latchedPressed |= heldDpad;
+                                s_dpadRepeat = MENU_NAV_REPEAT_INTERVAL;
+                            }
+                        }
                     }
-                    if (released & PSP_CTRL_CROSS)
+                    else
                     {
-                        lwjgl::Keyboard::detail::pushKey(28, false);
+                        s_lastHeldDpad = 0;
+                        s_dpadRepeat = 0.0f;
                     }
-
-                    // Circle: Back / Cancel / Escape
-                    if (newlyPressed & PSP_CTRL_CIRCLE)
-                        lwjgl::Keyboard::detail::pushKey(1, true);
-                    if (released & PSP_CTRL_CIRCLE)
-                        lwjgl::Keyboard::detail::pushKey(1, false);
-
-                    // Start: Enter / Confirm
-                    if (newlyPressed & PSP_CTRL_START)
-                        lwjgl::Keyboard::detail::pushKey(28, true);
-                    if (released & PSP_CTRL_START)
-                        lwjgl::Keyboard::detail::pushKey(28, false);
-
-                    // Select: Tab
-                    if (newlyPressed & PSP_CTRL_SELECT)
-                        lwjgl::Keyboard::detail::pushKey(15, true);
-                    if (released & PSP_CTRL_SELECT)
-                        lwjgl::Keyboard::detail::pushKey(15, false);
                 }
                 else
                 {

@@ -386,7 +386,7 @@ void LegacyControllerLayoutScreen::syncSelectedControl()
 void LegacyControllerLayoutScreen::updatePointerHover(int_t mouseX, int_t mouseY)
 {
     int_t hover = -1;
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     mouseX = mouseY = -10000;
 #endif
     for (GuiButton *button : controlList)
@@ -598,7 +598,7 @@ void LegacyControllerLayoutScreen::keyTyped(char_t c, int_t key)
         returnToParent();
         return;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == lwjgl::Keyboard::KEY_UP)
     {
         moveSelection(0, -1);
@@ -629,7 +629,7 @@ void LegacyControllerLayoutScreen::keyTyped(char_t c, int_t key)
 
 void LegacyControllerLayoutScreen::mouseClicked(int_t x, int_t y, int_t button)
 {
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (captureBindingIndex >= 0)
     {
         applyCapturedKey(-100 + button);

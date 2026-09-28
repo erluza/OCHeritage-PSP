@@ -385,7 +385,7 @@ void LegacyPlayGameScreen::keyTyped(char_t c, int_t key)
         mc->displayGuiScreen(parentScreen);
         return;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == 200)
     {
         moveSelection(-1);

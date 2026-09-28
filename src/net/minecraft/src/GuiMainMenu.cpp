@@ -196,7 +196,7 @@ void GuiMainMenu::keyTyped(char_t, int_t key)
 {
     if (mc == nullptr || mc->gameSettings == nullptr || !mc->gameSettings->legacyUI)
         return;
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == lwjgl::Keyboard::KEY_UP)
     {
         moveLegacySelection(-1);

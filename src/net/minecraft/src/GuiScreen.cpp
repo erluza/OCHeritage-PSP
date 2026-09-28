@@ -153,6 +153,10 @@ void GuiScreen::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 		legacyDrawSelectionCursorCentered(mc, mouseX, mouseY, PLATFORM_CURSOR_SIZE, zLevel + 100.0f);
 	}
 #endif
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
+	if (VirtualKeyboard::instance().isActive())
+		VirtualKeyboard::instance().render(mc->fontRenderer, width, height);
+#endif
 }
 
 void GuiScreen::keyTyped(char_t c, int_t key)
