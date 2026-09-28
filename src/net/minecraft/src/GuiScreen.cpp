@@ -319,7 +319,7 @@ void GuiScreen::handleMouseInput()
 
 	if (lwjgl::Mouse::getEventDX() != 0 || lwjgl::Mouse::getEventDY() != 0)
 		clearKeyboardSelectionFromPointer();
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
 	if (lwjgl::Mouse::getEventButtonState())
 		clearKeyboardSelectionFromPointer();
 #endif

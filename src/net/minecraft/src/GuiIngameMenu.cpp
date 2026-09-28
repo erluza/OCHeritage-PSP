@@ -4,6 +4,7 @@
 #include "GuiOptions.h"
 #include "GameSettings.h"
 #include "legacy/LegacyHelpOptions.h"
+#include "legacy/LegacyDebugOptions.h"
 #include "legacy/LegacyGuiButton.h"
 #include "legacy/LegacyMainMenuLayout.h"
 #include "legacy/LegacyMenuHints.h"
@@ -67,6 +68,7 @@ void GuiIngameMenu::initGui()
 		};
 
 		addLegacyButton(4, uiText("Resume Game"));
+		addLegacyButton(7, uiText("Host Options"));
 		addLegacyButton(0, uiText("Help & Options"));
 		addLegacyButton(5, uiText("Achievements"));
 		addLegacyButton(6, uiText("Statistics"));
@@ -175,6 +177,10 @@ void GuiIngameMenu::actionPerformed(GuiButton *button)
 	if (button->id == 6)
 	{
 		mc->displayGuiScreen(new GuiStats(this, mc->statFileWriter));
+	}
+	if (button->id == 7)
+	{
+		mc->displayGuiScreen(new LegacyDebugOptions(this, mc->gameSettings, LegacyOptionsBackgroundMode::PausedWorld));
 	}
 }
 

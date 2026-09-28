@@ -72,6 +72,7 @@ namespace PspPadState
 
             Minecraft* mc = Minecraft::getMinecraft();
             const bool inMenu = (mc != nullptr && mc->currentScreen != nullptr);
+            const bool specializedNav = inMenu && mc->currentScreen->usesSpecializedMenuNavigationForPlatform();
             static bool s_wasInMenu = false;
 
             if (inMenu != s_wasInMenu)
@@ -95,74 +96,169 @@ namespace PspPadState
 
             if (inMenu)
             {
-                // Virtual pointer in menus
-                if (std::abs(s_snapshot.leftX) > 0.01f || std::abs(s_snapshot.leftY) > 0.01f)
+                if (specializedNav)
                 {
-                    int oldX = s_cursorX;
-                    int oldY = s_cursorY;
-                    s_cursorX += static_cast<int>(s_snapshot.leftX * 4.5f);
-                    s_cursorY += static_cast<int>(s_snapshot.leftY * 4.5f);
-                    s_cursorX = std::max(0, std::min(480, s_cursorX));
-                    s_cursorY = std::max(0, std::min(272, s_cursorY));
-                    int dx = s_cursorX - oldX;
-                    int dy = s_cursorY - oldY;
-                    if (dx != 0 || dy != 0)
+                    // PS2-style specialized menu navigation:
+                    // Analog stick is mapped to D-pad navigation with repeat timer.
+                    // Pointer is NOT moved and mouse buttons are NOT pushed.
+                    static int s_analogDir = 0;
+                    static float s_analogRepeat = 0.0f;
+                    constexpr float NAV_ENTER = 0.55f;
+                    constexpr float NAV_RELEASE = 0.30f;
+                    constexpr float NAV_REPEAT_DELAY = 0.30f;
+                    constexpr float NAV_REPEAT_INTERVAL = 0.12f;
+
+                    float absX = std::abs(s_snapshot.leftX);
+                    float absY = std::abs(s_snapshot.leftY);
+
+                    if (s_analogDir != 0)
                     {
-                        lwjgl::Mouse::detail::pushMotion(s_cursorX, s_cursorY, dx, dy);
+                        float activeAxis = (s_analogDir <= 2) ? absY : absX;
+                        if (activeAxis <= NAV_RELEASE)
+                        {
+                            s_analogDir = 0;
+                            s_analogRepeat = 0.0f;
+                        }
                     }
+
+                    int newDir = 0;
+                    if (s_analogDir == 0)
+                    {
+                        if (absX >= NAV_ENTER || absY >= NAV_ENTER)
+                        {
+                            if (absY >= absX)
+                                newDir = (s_snapshot.leftY < 0.0f) ? 1 : 2; // 1: Up, 2: Down
+                            else
+                                newDir = (s_snapshot.leftX < 0.0f) ? 3 : 4; // 3: Left, 4: Right
+                            s_analogDir = newDir;
+                            s_analogRepeat = NAV_REPEAT_DELAY;
+                        }
+                    }
+                    else
+                    {
+                        s_analogRepeat -= 0.016f;
+                        if (s_analogRepeat <= 0.0f)
+                        {
+                            newDir = s_analogDir;
+                            s_analogRepeat = NAV_REPEAT_INTERVAL;
+                        }
+                    }
+
+                    if (newDir == 1) { s_latchedPressed |= PSP_CTRL_UP;    lwjgl::Keyboard::detail::pushKey(200, true); lwjgl::Keyboard::detail::pushKey(200, false); }
+                    if (newDir == 2) { s_latchedPressed |= PSP_CTRL_DOWN;  lwjgl::Keyboard::detail::pushKey(208, true); lwjgl::Keyboard::detail::pushKey(208, false); }
+                    if (newDir == 3) { s_latchedPressed |= PSP_CTRL_LEFT;  lwjgl::Keyboard::detail::pushKey(203, true); lwjgl::Keyboard::detail::pushKey(203, false); }
+                    if (newDir == 4) { s_latchedPressed |= PSP_CTRL_RIGHT; lwjgl::Keyboard::detail::pushKey(205, true); lwjgl::Keyboard::detail::pushKey(205, false); }
+
+                    // D-Pad menu navigation
+                    if (newlyPressed & PSP_CTRL_UP)    { lwjgl::Keyboard::detail::pushKey(200, true); }
+                    if (released & PSP_CTRL_UP)        { lwjgl::Keyboard::detail::pushKey(200, false); }
+                    if (newlyPressed & PSP_CTRL_DOWN)  { lwjgl::Keyboard::detail::pushKey(208, true); }
+                    if (released & PSP_CTRL_DOWN)      { lwjgl::Keyboard::detail::pushKey(208, false); }
+                    if (newlyPressed & PSP_CTRL_LEFT)  { lwjgl::Keyboard::detail::pushKey(203, true); }
+                    if (released & PSP_CTRL_LEFT)      { lwjgl::Keyboard::detail::pushKey(203, false); }
+                    if (newlyPressed & PSP_CTRL_RIGHT) { lwjgl::Keyboard::detail::pushKey(205, true); }
+                    if (released & PSP_CTRL_RIGHT)     { lwjgl::Keyboard::detail::pushKey(205, false); }
+
+                    // Cross: Select / Confirm (Enter)
+                    if (newlyPressed & PSP_CTRL_CROSS)
+                    {
+                        s_latchedPressed |= PSP_CTRL_CROSS;
+                        lwjgl::Keyboard::detail::pushKey(28, true);
+                    }
+                    if (released & PSP_CTRL_CROSS)
+                    {
+                        lwjgl::Keyboard::detail::pushKey(28, false);
+                    }
+
+                    // Circle: Back / Cancel / Escape
+                    if (newlyPressed & PSP_CTRL_CIRCLE)
+                        lwjgl::Keyboard::detail::pushKey(1, true);
+                    if (released & PSP_CTRL_CIRCLE)
+                        lwjgl::Keyboard::detail::pushKey(1, false);
+
+                    // Start: Enter / Confirm
+                    if (newlyPressed & PSP_CTRL_START)
+                        lwjgl::Keyboard::detail::pushKey(28, true);
+                    if (released & PSP_CTRL_START)
+                        lwjgl::Keyboard::detail::pushKey(28, false);
+
+                    // Select: Tab
+                    if (newlyPressed & PSP_CTRL_SELECT)
+                        lwjgl::Keyboard::detail::pushKey(15, true);
+                    if (released & PSP_CTRL_SELECT)
+                        lwjgl::Keyboard::detail::pushKey(15, false);
                 }
+                else
+                {
+                    // Virtual pointer in menus (containers, inventories, textfields)
+                    if (std::abs(s_snapshot.leftX) > 0.01f || std::abs(s_snapshot.leftY) > 0.01f)
+                    {
+                        int oldX = s_cursorX;
+                        int oldY = s_cursorY;
+                        s_cursorX += static_cast<int>(s_snapshot.leftX * 4.5f);
+                        s_cursorY += static_cast<int>(s_snapshot.leftY * 4.5f);
+                        s_cursorX = std::max(0, std::min(480, s_cursorX));
+                        s_cursorY = std::max(0, std::min(272, s_cursorY));
+                        int dx = s_cursorX - oldX;
+                        int dy = s_cursorY - oldY;
+                        if (dx != 0 || dy != 0)
+                        {
+                            lwjgl::Mouse::detail::pushMotion(s_cursorX, s_cursorY, dx, dy);
+                        }
+                    }
 
-                // D-Pad menu navigation
-                if (newlyPressed & PSP_CTRL_UP)    lwjgl::Keyboard::detail::pushKey(200, true);
-                if (released & PSP_CTRL_UP)        lwjgl::Keyboard::detail::pushKey(200, false);
-                if (newlyPressed & PSP_CTRL_DOWN)  lwjgl::Keyboard::detail::pushKey(208, true);
-                if (released & PSP_CTRL_DOWN)      lwjgl::Keyboard::detail::pushKey(208, false);
-                if (newlyPressed & PSP_CTRL_LEFT)  lwjgl::Keyboard::detail::pushKey(203, true);
-                if (released & PSP_CTRL_LEFT)      lwjgl::Keyboard::detail::pushKey(203, false);
-                if (newlyPressed & PSP_CTRL_RIGHT) lwjgl::Keyboard::detail::pushKey(205, true);
-                if (released & PSP_CTRL_RIGHT)     lwjgl::Keyboard::detail::pushKey(205, false);
+                    // D-Pad menu navigation (for container slot navigator or text cursor)
+                    if (newlyPressed & PSP_CTRL_UP)    lwjgl::Keyboard::detail::pushKey(200, true);
+                    if (released & PSP_CTRL_UP)        lwjgl::Keyboard::detail::pushKey(200, false);
+                    if (newlyPressed & PSP_CTRL_DOWN)  lwjgl::Keyboard::detail::pushKey(208, true);
+                    if (released & PSP_CTRL_DOWN)      lwjgl::Keyboard::detail::pushKey(208, false);
+                    if (newlyPressed & PSP_CTRL_LEFT)  lwjgl::Keyboard::detail::pushKey(203, true);
+                    if (released & PSP_CTRL_LEFT)      lwjgl::Keyboard::detail::pushKey(203, false);
+                    if (newlyPressed & PSP_CTRL_RIGHT) lwjgl::Keyboard::detail::pushKey(205, true);
+                    if (released & PSP_CTRL_RIGHT)     lwjgl::Keyboard::detail::pushKey(205, false);
 
-                // Cross: Click / Select
-                if (newlyPressed & PSP_CTRL_CROSS)
-                    lwjgl::Mouse::detail::pushButton(0, true, s_cursorX, s_cursorY);
-                if (released & PSP_CTRL_CROSS)
-                    lwjgl::Mouse::detail::pushButton(0, false, s_cursorX, s_cursorY);
+                    // Cross: Left Click
+                    if (newlyPressed & PSP_CTRL_CROSS)
+                        lwjgl::Mouse::detail::pushButton(0, true, s_cursorX, s_cursorY);
+                    if (released & PSP_CTRL_CROSS)
+                        lwjgl::Mouse::detail::pushButton(0, false, s_cursorX, s_cursorY);
 
-                // L / R Triggers: Creative menu / Container wheel scrolling
-                if (newlyPressed & PSP_CTRL_LTRIGGER)
-                    lwjgl::Mouse::detail::pushWheel(1, s_cursorX, s_cursorY);
-                if (newlyPressed & PSP_CTRL_RTRIGGER)
-                    lwjgl::Mouse::detail::pushWheel(-1, s_cursorX, s_cursorY);
+                    // L / R Triggers: Creative menu / Container wheel scrolling
+                    if (newlyPressed & PSP_CTRL_LTRIGGER)
+                        lwjgl::Mouse::detail::pushWheel(1, s_cursorX, s_cursorY);
+                    if (newlyPressed & PSP_CTRL_RTRIGGER)
+                        lwjgl::Mouse::detail::pushWheel(-1, s_cursorX, s_cursorY);
 
-                // Circle: Back / Cancel / Escape
-                if (newlyPressed & PSP_CTRL_CIRCLE)
-                    lwjgl::Keyboard::detail::pushKey(1, true);
-                if (released & PSP_CTRL_CIRCLE)
-                    lwjgl::Keyboard::detail::pushKey(1, false);
+                    // Circle: Back / Cancel / Escape
+                    if (newlyPressed & PSP_CTRL_CIRCLE)
+                        lwjgl::Keyboard::detail::pushKey(1, true);
+                    if (released & PSP_CTRL_CIRCLE)
+                        lwjgl::Keyboard::detail::pushKey(1, false);
 
-                // Square: Right Click (e.g. split stack in inventory)
-                if (newlyPressed & PSP_CTRL_SQUARE)
-                    lwjgl::Mouse::detail::pushButton(1, true, s_cursorX, s_cursorY);
-                if (released & PSP_CTRL_SQUARE)
-                    lwjgl::Mouse::detail::pushButton(1, false, s_cursorX, s_cursorY);
+                    // Square: Right Click (e.g. split stack in inventory)
+                    if (newlyPressed & PSP_CTRL_SQUARE)
+                        lwjgl::Mouse::detail::pushButton(1, true, s_cursorX, s_cursorY);
+                    if (released & PSP_CTRL_SQUARE)
+                        lwjgl::Mouse::detail::pushButton(1, false, s_cursorX, s_cursorY);
 
-                // Triangle: Quick-move / Shift
-                if (newlyPressed & PSP_CTRL_TRIANGLE)
-                    lwjgl::Keyboard::detail::pushKey(42, true);
-                if (released & PSP_CTRL_TRIANGLE)
-                    lwjgl::Keyboard::detail::pushKey(42, false);
+                    // Triangle: Quick-move / Shift
+                    if (newlyPressed & PSP_CTRL_TRIANGLE)
+                        lwjgl::Keyboard::detail::pushKey(42, true);
+                    if (released & PSP_CTRL_TRIANGLE)
+                        lwjgl::Keyboard::detail::pushKey(42, false);
 
-                // Start: Return
-                if (newlyPressed & PSP_CTRL_START)
-                    lwjgl::Keyboard::detail::pushKey(28, true);
-                if (released & PSP_CTRL_START)
-                    lwjgl::Keyboard::detail::pushKey(28, false);
+                    // Start: Return
+                    if (newlyPressed & PSP_CTRL_START)
+                        lwjgl::Keyboard::detail::pushKey(28, true);
+                    if (released & PSP_CTRL_START)
+                        lwjgl::Keyboard::detail::pushKey(28, false);
 
-                // Select: Tab
-                if (newlyPressed & PSP_CTRL_SELECT)
-                    lwjgl::Keyboard::detail::pushKey(15, true);
-                if (released & PSP_CTRL_SELECT)
-                    lwjgl::Keyboard::detail::pushKey(15, false);
+                    // Select: Tab
+                    if (newlyPressed & PSP_CTRL_SELECT)
+                        lwjgl::Keyboard::detail::pushKey(15, true);
+                    if (released & PSP_CTRL_SELECT)
+                        lwjgl::Keyboard::detail::pushKey(15, false);
+                }
             }
             else // in gameplay
             {

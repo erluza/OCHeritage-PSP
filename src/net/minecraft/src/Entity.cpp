@@ -341,6 +341,14 @@ void Entity::preparePlayerToSpawn()
 	{
 		return;
 	}
+	if (worldObj->isLimitedWorld())
+	{
+		constexpr double SAFE_BOUND = 100.0;
+		if (posX < -SAFE_BOUND) posX = -SAFE_BOUND;
+		else if (posX > SAFE_BOUND) posX = SAFE_BOUND;
+		if (posZ < -SAFE_BOUND) posZ = -SAFE_BOUND;
+		else if (posZ > SAFE_BOUND) posZ = SAFE_BOUND;
+	}
 	do
 	{
 		if (posY <= 0.0)
@@ -780,10 +788,30 @@ void Entity::moveEntity(double d, double d1, double d2)
 		constexpr double BOUNDARY = 127.5;
 		double clampedX = posX;
 		double clampedZ = posZ;
-		if (clampedX < -BOUNDARY) { clampedX = -BOUNDARY; motionX = 0.0; isCollidedHorizontally = true; }
-		else if (clampedX > BOUNDARY) { clampedX = BOUNDARY; motionX = 0.0; isCollidedHorizontally = true; }
-		if (clampedZ < -BOUNDARY) { clampedZ = -BOUNDARY; motionZ = 0.0; isCollidedHorizontally = true; }
-		else if (clampedZ > BOUNDARY) { clampedZ = BOUNDARY; motionZ = 0.0; isCollidedHorizontally = true; }
+		if (clampedX < -BOUNDARY)
+		{
+			clampedX = -BOUNDARY;
+			if (motionX < 0.0) motionX = 0.0;
+			isCollidedHorizontally = true;
+		}
+		else if (clampedX > BOUNDARY)
+		{
+			clampedX = BOUNDARY;
+			if (motionX > 0.0) motionX = 0.0;
+			isCollidedHorizontally = true;
+		}
+		if (clampedZ < -BOUNDARY)
+		{
+			clampedZ = -BOUNDARY;
+			if (motionZ < 0.0) motionZ = 0.0;
+			isCollidedHorizontally = true;
+		}
+		else if (clampedZ > BOUNDARY)
+		{
+			clampedZ = BOUNDARY;
+			if (motionZ > 0.0) motionZ = 0.0;
+			isCollidedHorizontally = true;
+		}
 		if (clampedX != posX || clampedZ != posZ)
 		{
 			boundingBox->offset(clampedX - posX, 0.0, clampedZ - posZ);

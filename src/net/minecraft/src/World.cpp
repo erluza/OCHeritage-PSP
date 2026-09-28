@@ -618,7 +618,7 @@ void World::generateSpawnPoint()
     std::vector<BiomeGenBase *> &spawnBiomes = manager->getBiomesToSpawnIn();
     Random spawnRandom(getSeed());
     WorldLoadTrace::step("findBiomePosition");
-#if defined(PS2_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
     ChunkPosition *position = manager->findBiomePosition(0, 0, 64, spawnBiomes, spawnRandom);
 #else
     ChunkPosition *position = manager->findBiomePosition(0, 0, 256, spawnBiomes, spawnRandom);
@@ -642,8 +642,8 @@ void World::generateSpawnPoint()
         else if (spawnZ > 100) spawnZ = 100;
     }
 
-#if defined(PS2_PLATFORM)
-    // Hardware PS2 cannot afford vanilla's synchronous spawn probing here.
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
+    // Hardware PS2/PSP cannot afford vanilla's synchronous spawn probing here.
     // Every canCoordinateBeSpawn() can force another complete chunk generation
     // before the loading screen is visible. Generate only the biome-guided
     // candidate chunk and find the best spawn column inside that same 16x16.
@@ -705,6 +705,14 @@ void World::generateSpawnPoint()
             spawnX = JavaArithmetic::intAdd(chunkWorldX, fallbackLocalX);
             spawnZ = JavaArithmetic::intAdd(chunkWorldZ, fallbackLocalZ);
             spawnY = fallbackY;
+        }
+
+        if (isLimitedWorld())
+        {
+            if (spawnX < -100) spawnX = -100;
+            else if (spawnX > 100) spawnX = 100;
+            if (spawnZ < -100) spawnZ = -100;
+            else if (spawnZ > 100) spawnZ = 100;
         }
     }
 #elif PLATFORM_BOUNDED_WORLD
