@@ -233,6 +233,32 @@ void EntityPlayerSP::onLivingUpdate()
 			motionY += 0.15;
 	}
 
+	const bool autoJumpEnabled = mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->autoJump;
+	if (autoJumpEnabled && movementInput != nullptr && onGround && !isSneaking() && !capabilities.isFlying &&
+	    isCollidedHorizontally && (movementInput->moveForward != 0.0f || movementInput->moveStrafe != 0.0f))
+	{
+		const float yawRad = rotationYaw * (3.1415927f / 180.0f);
+		const float forward = movementInput->moveForward;
+		const float strafe = movementInput->moveStrafe;
+		float dirX = -MathHelper::sin(yawRad) * forward + MathHelper::cos(yawRad) * strafe;
+		float dirZ = MathHelper::cos(yawRad) * forward + MathHelper::sin(yawRad) * strafe;
+		const float len = MathHelper::sqrt_float(dirX * dirX + dirZ * dirZ);
+		if (len > 0.001f)
+		{
+			dirX /= len;
+			dirZ /= len;
+			constexpr double stepDist = 0.35;
+			constexpr double stepUp = 1.05;
+			AxisAlignedBB *candidate = AxisAlignedBB::getBoundingBoxFromPool(
+				boundingBox->minX + dirX * stepDist, boundingBox->minY + stepUp, boundingBox->minZ + dirZ * stepDist,
+				boundingBox->maxX + dirX * stepDist, boundingBox->maxY + stepUp, boundingBox->maxZ + dirZ * stepDist);
+			if (worldObj != nullptr && candidate != nullptr && worldObj->getCollidingBoundingBoxes(this, candidate).empty())
+			{
+				movementInput->jump = true;
+			}
+		}
+	}
+
 	EntityPlayer::onLivingUpdate();
 	if (onGround && capabilities.isFlying)
 	{

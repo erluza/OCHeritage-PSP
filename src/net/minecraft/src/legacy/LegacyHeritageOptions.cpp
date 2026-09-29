@@ -31,13 +31,14 @@ constexpr int_t BUTTON_DEADZONE = 602;
 constexpr int_t BUTTON_DONE = 600;
 constexpr int_t BUTTON_EDIT_PLAYER_NAME = 606;
 constexpr int_t BUTTON_SPLITSCREEN_LAYOUT = 607;
+constexpr int_t BUTTON_AUTO_JUMP = 608;
 
 }
 
 LegacyHeritageOptions::LegacyHeritageOptions(GuiScreen *parent, GameSettings *settingsValue,
     LegacyOptionsBackgroundMode backgroundModeValue)
     : LegacyOptionsScreen(parent, settingsValue, backgroundModeValue), nameField(nullptr), legacyUiCheckbox(nullptr),
-      legacyLookCheckbox(nullptr), alternativeControlsCheckbox(nullptr)
+      legacyLookCheckbox(nullptr), autoJumpCheckbox(nullptr), alternativeControlsCheckbox(nullptr)
 {
 }
 
@@ -49,7 +50,7 @@ LegacyHeritageOptions::~LegacyHeritageOptions()
 
 void LegacyHeritageOptions::initGui()
 {
-    int_t rowCount = 5; // player name label, player name field, Legacy UI, Legacy Look, Done
+    int_t rowCount = 6; // player name label, player name field, Legacy UI, Legacy Look, Auto-Jump, Done
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     ++rowCount;
 #endif
@@ -98,6 +99,10 @@ void LegacyHeritageOptions::initGui()
     legacyLookCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_LOOK, x, legacyLayout.rowY(row++), w, h,
         uiText("Legacy Look"), settings->legacyLook);
     controlList.push_back(legacyLookCheckbox);
+
+    autoJumpCheckbox = new LegacyOptionCheckbox(BUTTON_AUTO_JUMP, x, legacyLayout.rowY(row++), w, h,
+        uiText("Auto-Jump"), settings->autoJump);
+    controlList.push_back(autoJumpCheckbox);
 
 #ifdef WII_PLATFORM
     alternativeControlsCheckbox = new LegacyOptionCheckbox(BUTTON_ALTERNATIVE_CONTROLS, x,
@@ -225,6 +230,15 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
         settings->saveOptions();
         if (mc != nullptr && mc->entityRenderer != nullptr)
             mc->entityRenderer->updateWorldLightLevels();
+        return;
+    }
+
+    if (button->id == BUTTON_AUTO_JUMP)
+    {
+        settings->autoJump = !settings->autoJump;
+        if (autoJumpCheckbox != nullptr)
+            autoJumpCheckbox->setChecked(settings->autoJump);
+        settings->saveOptions();
         return;
     }
 

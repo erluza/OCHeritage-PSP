@@ -2426,6 +2426,7 @@ void EntityRenderer::setupOverlayRendering()
     // never restores them, so every GUI draw *after* the dirt background already
     // runs unlit -- and those are exactly the draws that fail. FontRenderer
     // disables lighting too, and its text is missing all the same.
+    renderDepthMask(true);
     renderClear(RenderClearMask::Depth);  // 256
     renderMatrixMode(RenderMatrixMode::Projection);
     renderLoadIdentity();

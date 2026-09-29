@@ -254,6 +254,13 @@ void LegacyControlTooltipHud::render(Minecraft *mc, int_t screenWidth, int_t scr
 #endif
     }
 
+    renderDisable(RenderCapability::DepthTest);
+    renderDepthMask(false);
+    renderEnable(RenderCapability::Texture2D);
+    renderEnable(RenderCapability::Blend);
+    renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+    renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
     for (int_t i = 0; i < PROMPT_COUNT; ++i)
         if (s_row.icons[i].texture >= 0) drawControlIcon(mc, s_row.icons[i], s_row.x[i], s_row.y - 2);
     drawRow(font, s_row);

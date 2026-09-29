@@ -23,6 +23,7 @@ enum LegacyDebugButtonId
 {
     BUTTON_SHOW_FPS = 700,
     BUTTON_EXTENDED_INFO = 701,
+    BUTTON_AUTO_JUMP = 706,
     BUTTON_SET_DAY = 702,
     BUTTON_GAME_MODE = 703,
     BUTTON_KEEP_INVENTORY = 704,
@@ -37,7 +38,7 @@ constexpr long_t DAY_TIME = 1000LL;
 LegacyDebugOptions::LegacyDebugOptions(GuiScreen *parent, GameSettings *settingsValue,
     LegacyOptionsBackgroundMode backgroundModeValue)
     : LegacyOptionsScreen(parent, settingsValue, backgroundModeValue),
-      showFpsCheckbox(nullptr), extendedInfoCheckbox(nullptr), keepInventoryCheckbox(nullptr),
+      showFpsCheckbox(nullptr), extendedInfoCheckbox(nullptr), autoJumpCheckbox(nullptr), keepInventoryCheckbox(nullptr),
       setDayButton(nullptr), gameModeButton(nullptr), killEntitiesButton(nullptr), multiplayer(false)
 {
 }
@@ -55,6 +56,8 @@ void LegacyDebugOptions::initGui()
         uiText("Show FPS"), settings->showFps);
     extendedInfoCheckbox = new LegacyOptionCheckbox(BUTTON_EXTENDED_INFO, x, legacyLayout.rowY(1), w, h,
         uiText("F3 Extended Info"), settings->showDebugInfo);
+    autoJumpCheckbox = new LegacyOptionCheckbox(BUTTON_AUTO_JUMP, x, legacyLayout.rowY(2), w, h,
+        uiText("Auto-Jump"), settings->autoJump);
     setDayButton = new LegacyGuiButton(BUTTON_SET_DAY, x, legacyLayout.rowY(3), w, h, uiText("Set Day"));
     gameModeButton = new LegacyGuiButton(BUTTON_GAME_MODE, x, legacyLayout.rowY(4), w, h, "");
     keepInventoryCheckbox = new LegacyOptionCheckbox(BUTTON_KEEP_INVENTORY, x, legacyLayout.rowY(5), w, h,
@@ -68,6 +71,7 @@ void LegacyDebugOptions::initGui()
 
     controlList.push_back(showFpsCheckbox);
     controlList.push_back(extendedInfoCheckbox);
+    controlList.push_back(autoJumpCheckbox);
     controlList.push_back(setDayButton);
     controlList.push_back(gameModeButton);
     controlList.push_back(keepInventoryCheckbox);
@@ -83,6 +87,8 @@ void LegacyDebugOptions::syncControls()
         showFpsCheckbox->setChecked(settings->showFps);
     if (extendedInfoCheckbox != nullptr)
         extendedInfoCheckbox->setChecked(settings->showDebugInfo);
+    if (autoJumpCheckbox != nullptr)
+        autoJumpCheckbox->setChecked(settings->autoJump);
     if (keepInventoryCheckbox != nullptr)
         keepInventoryCheckbox->setChecked(settings->debugKeepInventory);
     if (gameModeButton != nullptr)
@@ -161,6 +167,11 @@ void LegacyDebugOptions::actionPerformed(GuiButton *button)
         return;
     case BUTTON_EXTENDED_INFO:
         settings->showDebugInfo = !settings->showDebugInfo;
+        syncControls();
+        return;
+    case BUTTON_AUTO_JUMP:
+        settings->autoJump = !settings->autoJump;
+        settings->saveOptions();
         syncControls();
         return;
     case BUTTON_SET_DAY:

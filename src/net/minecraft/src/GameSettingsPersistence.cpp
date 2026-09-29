@@ -186,6 +186,8 @@ void GameSettings::loadOptions()
 					legacyUI = value == "true";
 				if (key == "legacyLook")
 					legacyLook = value == "true";
+				if (key == "autoJump")
+					autoJump = value == "true";
 				if (key == "legacyGuiScaleRestore")
 				{
 					legacyGuiScaleRestore = parseIntJava(value);
@@ -398,7 +400,7 @@ void GameSettings::saveOptions()
 		"music", "sound", "invertYMouse", "mouseSensitivity", "fov", "viewDistance",
 		"guiScale", "particles", "bobView", "anaglyph3d", "advancedOpengl", "fpsLimit",
 		"difficulty", "fancyGraphics", "ao", "skin", "lastServer", "lang", "playerName", "selectedSkin", "selectedSkinP2", "legacyUI",
-		"legacyLook", "legacyGuiScaleRestore",
+		"legacyLook", "autoJump", "legacyGuiScaleRestore",
 		"alternativeControllerLayout", "wiiAlternativeControls", "controllerDeadzone", "wiiStickDeadzone",
 		"ofFogFancy", "ofFogOff", "ofFogStart", "ofLoadFar", "ofPreloadedChunks", "ofOcclusionFancy",
 		"ofSmoothFps", "ofSmoothInput", "ofBrightness", "ofAoLevel", "ofClouds",
@@ -476,6 +478,7 @@ void GameSettings::saveOptions()
 	printwriter << "selectedSkinP2:" << selectedSkinP2 << "\n";
 	printwriter << "legacyUI:" << (legacyUI ? "true" : "false") << "\n";
 	printwriter << "legacyLook:" << (legacyLook ? "true" : "false") << "\n";
+	printwriter << "autoJump:" << (autoJump ? "true" : "false") << "\n";
 	printwriter << "legacyGuiScaleRestore:" << legacyGuiScaleRestore << "\n";
 	printwriter << "alternativeControllerLayout:" << (alternativeControllerLayout ? "true" : "false") << "\n";
 	printwriter << "controllerDeadzone:" << controllerDeadzone << "\n";

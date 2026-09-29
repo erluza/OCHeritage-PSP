@@ -27,6 +27,7 @@ private:
 
     LegacyOptionCheckbox *showFpsCheckbox;
     LegacyOptionCheckbox *extendedInfoCheckbox;
+    LegacyOptionCheckbox *autoJumpCheckbox;
     LegacyOptionCheckbox *keepInventoryCheckbox;
     LegacyGuiButton *setDayButton;
     LegacyGuiButton *gameModeButton;
