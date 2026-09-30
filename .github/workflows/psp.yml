@@ -1,0 +1,57 @@
+name: PlayStation Portable (PSP) Build
+
+on:
+  push:
+    branches: [ main, psp-port ]
+  pull_request:
+    branches: [ main, psp-port ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-psp:
+    name: Build PSP EBOOT.PBP
+    runs-on: ubuntu-latest
+    container:
+      image: pspdev/pspdev:latest
+    env:
+      PSPDEV: /usr/local/pspdev
+      PATH: /usr/local/pspdev/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Verify toolchain and environment
+        run: |
+          echo "PSPDEV is $PSPDEV"
+          psp-gcc --version
+          cmake --version || true
+
+      - name: Build PSP Port
+        run: |
+          bash ./build_psp.sh
+
+      - name: Package PSP files
+        run: |
+          mkdir -p release/OptiCraft
+          cp -f EBOOT.PBP release/OptiCraft/
+          if [ -f assets.pak ]; then
+            cp -f assets.pak release/OptiCraft/
+          fi
+          ls -lh release/OptiCraft/
+
+      - name: Upload PSP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OptiCraft-PSP
+          path: release/
+          if-no-files-found: error
