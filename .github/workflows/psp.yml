@@ -2,9 +2,9 @@ name: PlayStation Portable (PSP) Build
 
 on:
   push:
-    branches: [ main, psp-port ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, psp-port ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
