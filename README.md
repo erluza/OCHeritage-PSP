@@ -127,7 +127,7 @@ The compiled `EBOOT.PBP` will be generated in the project root.
 2. **Install PSP Toolchain (PSPSDK)** inside WSL:
    ```bash
    sudo apt update
-   sudo apt install -y build-essential cmake ninja-build git python3 curl libreadline-dev libusb-dev
+   sudo apt install -y build-essential cmake ninja-build ccache git python3 curl libreadline-dev libusb-dev
    
    # Download and install precompiled PSP toolchain or build via pspdev
    # Ensure PSPDEV is exported in your environment:
@@ -289,7 +289,7 @@ El archivo `EBOOT.PBP` resultante se generará en la raíz del repositorio.
 2. **Configurar el entorno PSPDEV** dentro de WSL:
    ```bash
    sudo apt update
-   sudo apt install -y build-essential cmake ninja-build git python3 curl
+   sudo apt install -y build-essential cmake ninja-build ccache git python3 curl
    
    # Configurar la ruta de PSPDEV en el perfil
    echo 'export PSPDEV=/usr/local/pspdev' >> ~/.bashrc

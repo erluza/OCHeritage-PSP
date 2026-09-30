@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 if /I "%~1"=="clean" (
     echo Cleaning PSP build directory...
-    wsl.exe -d Ubuntu bash -c "cd '$(wslpath '%CD%')' && rm -rf build/psp"
+    wsl.exe -d Ubuntu bash -c "cd '$(wslpath '%CD%')' && rm -rf build/psp /tmp/opticraft_psp_build"
     echo Clean complete.
     exit /b 0
 )

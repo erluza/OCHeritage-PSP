@@ -17,6 +17,14 @@ endif()
 
 message(STATUS "PSP build: PSPDEV=${PSPDEV}")
 
+# Enable ccache for fast compilation if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    message(STATUS "PSP build: Using ccache: ${CCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 # Collect common and PSP platform sources recursively
 mcbeta_collect_platform_sources(PSP_SOURCES psp)
 mcbeta_exclude_remote_stats_sources(PSP_SOURCES)
@@ -46,6 +54,12 @@ set_target_properties(OptiCraft PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )
+if(CCACHE_PROGRAM)
+    set_target_properties(OptiCraft PROPERTIES
+        C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}"
+        CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}"
+    )
+endif()
 
 target_include_directories(OptiCraft PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
@@ -73,6 +87,7 @@ target_compile_definitions(OptiCraft PRIVATE
 
 target_compile_options(OptiCraft PRIVATE
     -O2
+    -pipe
     $<$<COMPILE_LANGUAGE:CXX>:-frtti>
     -fno-math-errno
     -fno-trapping-math
