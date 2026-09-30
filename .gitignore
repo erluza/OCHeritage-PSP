@@ -402,3 +402,5 @@ extracted_assets_vanilla/
 EBOOT.PBP
 bin/psp/
 
+# Local commit patch exports
+/patches/

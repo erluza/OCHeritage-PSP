@@ -535,6 +535,30 @@ void Entity::onEntityUpdate()
 	isFirstUpdate = false;
 }
 
+void Entity::onRemoteMultiplayerEntityUpdateLite()
+{
+	// Remote mobs are authoritative on the multiplayer server. On PS2 throttled
+	// ticks we still need the bookkeeping normally performed by onEntityUpdate(),
+	// but repeating water/lava material scans for every remote mob is redundant.
+	if (ridingEntity != nullptr && ridingEntity->isDead)
+	{
+		ridingEntity = nullptr;
+	}
+	++ticksExisted;
+	prevDistanceWalkedModified = distanceWalkedModified;
+	prevPosX = posX;
+	prevPosY = posY;
+	prevPosZ = posZ;
+	prevRotationPitch = rotationPitch;
+	prevRotationYaw = rotationYaw;
+	fire = 0;
+	if (posY < -64.0)
+	{
+		kill();
+	}
+	isFirstUpdate = false;
+}
+
 void Entity::setOnFireFromLava()
 {
 	if (!immuneToFire)
@@ -570,10 +594,18 @@ void Entity::moveEntity(double d, double d1, double d2)
 		if (worldObj != nullptr && worldObj->isLimitedWorld())
 		{
 			constexpr double BOUNDARY = 127.5;
-			if (posX < -BOUNDARY) posX = -BOUNDARY;
-			else if (posX > BOUNDARY) posX = BOUNDARY;
-			if (posZ < -BOUNDARY) posZ = -BOUNDARY;
-			else if (posZ > BOUNDARY) posZ = BOUNDARY;
+			double clampedX = posX;
+			double clampedZ = posZ;
+			if (clampedX < -BOUNDARY) clampedX = -BOUNDARY;
+			else if (clampedX > BOUNDARY) clampedX = BOUNDARY;
+			if (clampedZ < -BOUNDARY) clampedZ = -BOUNDARY;
+			else if (clampedZ > BOUNDARY) clampedZ = BOUNDARY;
+			if (clampedX != posX || clampedZ != posZ)
+			{
+				boundingBox->offset(clampedX - posX, 0.0, clampedZ - posZ);
+				posX = clampedX;
+				posZ = clampedZ;
+			}
 		}
 		return;
 	}
@@ -589,6 +621,67 @@ void Entity::moveEntity(double d, double d1, double d2)
 		motionX = 0.0;
 		motionY = 0.0;
 		motionZ = 0.0;
+	}
+	bool borderCollided = false;
+	if (worldObj != nullptr && worldObj->isLimitedWorld())
+	{
+		constexpr double BOUNDARY = 127.5;
+		// Only cancel separating (outward) velocity towards the world edge.
+		// Inward velocity (walking away from edge) and tangential velocity (sliding along perimeter)
+		// are completely preserved so the player never gets stuck or glued.
+		if (posX >= BOUNDARY && d > 0.0)
+		{
+			d = 0.0;
+			motionX = 0.0;
+			borderCollided = true;
+		}
+		else if (posX <= -BOUNDARY && d < 0.0)
+		{
+			d = 0.0;
+			motionX = 0.0;
+			borderCollided = true;
+		}
+		else if (posX + d > BOUNDARY)
+		{
+			d = BOUNDARY - posX;
+			if (d < 0.0) d = 0.0;
+			motionX = 0.0;
+			borderCollided = true;
+		}
+		else if (posX + d < -BOUNDARY)
+		{
+			d = -BOUNDARY - posX;
+			if (d > 0.0) d = 0.0;
+			motionX = 0.0;
+			borderCollided = true;
+		}
+
+		if (posZ >= BOUNDARY && d2 > 0.0)
+		{
+			d2 = 0.0;
+			motionZ = 0.0;
+			borderCollided = true;
+		}
+		else if (posZ <= -BOUNDARY && d2 < 0.0)
+		{
+			d2 = 0.0;
+			motionZ = 0.0;
+			borderCollided = true;
+		}
+		else if (posZ + d2 > BOUNDARY)
+		{
+			d2 = BOUNDARY - posZ;
+			if (d2 < 0.0) d2 = 0.0;
+			motionZ = 0.0;
+			borderCollided = true;
+		}
+		else if (posZ + d2 < -BOUNDARY)
+		{
+			d2 = -BOUNDARY - posZ;
+			if (d2 > 0.0) d2 = 0.0;
+			motionZ = 0.0;
+			borderCollided = true;
+		}
 	}
 	double d5 = d;
 	double d6 = d1;
@@ -792,25 +885,25 @@ void Entity::moveEntity(double d, double d1, double d2)
 		{
 			clampedX = -BOUNDARY;
 			if (motionX < 0.0) motionX = 0.0;
-			isCollidedHorizontally = true;
+			borderCollided = true;
 		}
 		else if (clampedX > BOUNDARY)
 		{
 			clampedX = BOUNDARY;
 			if (motionX > 0.0) motionX = 0.0;
-			isCollidedHorizontally = true;
+			borderCollided = true;
 		}
 		if (clampedZ < -BOUNDARY)
 		{
 			clampedZ = -BOUNDARY;
 			if (motionZ < 0.0) motionZ = 0.0;
-			isCollidedHorizontally = true;
+			borderCollided = true;
 		}
 		else if (clampedZ > BOUNDARY)
 		{
 			clampedZ = BOUNDARY;
 			if (motionZ > 0.0) motionZ = 0.0;
-			isCollidedHorizontally = true;
+			borderCollided = true;
 		}
 		if (clampedX != posX || clampedZ != posZ)
 		{
@@ -819,7 +912,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 			posZ = clampedZ;
 		}
 	}
-	isCollidedHorizontally = d5 != d || d7 != d2;
+	isCollidedHorizontally = (d5 != d || d7 != d2) || borderCollided;
 	isCollidedVertically = d6 != d1;
 	onGround = d6 != d1 && d6 < 0.0;
 	isCollided = isCollidedHorizontally || isCollidedVertically;

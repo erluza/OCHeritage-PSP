@@ -2466,6 +2466,15 @@ void Minecraft::changeWorld2(World *world, const std::string &s)
 void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *entityplayer)
 {
     World *oldWorld = theWorld;
+#ifdef PS2_PLATFORM
+    // A remote world has no local chunks or level data to save. More importantly,
+    // forcing synchronous storage / threaded-I/O drains while the PS2 network stack
+    // is being torn down can stall the IOP during disconnect. Keep dirty stats in
+    // RAM and let the next normal sync point (or app shutdown) persist them.
+    const bool ps2MultiplayerExit = oldWorld != nullptr && oldWorld->multiplayerWorld && world == nullptr;
+#else
+    constexpr bool ps2MultiplayerExit = false;
+#endif
     EntityPlayerSP *transferredPlayer = entityplayer;
     if (transferredPlayer == nullptr && world != nullptr && world->multiplayerWorld)
         transferredPlayer = thePlayer;
@@ -2500,14 +2509,15 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
         oldWorld->detachEntityForWorldChange(transferredPlayer);
 
     statFileWriter->prepareStatsForSync();
-    statFileWriter->syncStats();
+    if (!ps2MultiplayerExit)
+        statFileWriter->syncStats();
     renderViewEntity = nullptr;
     loadingScreen->printText(s);
     loadingScreen->displayLoadingString("");
     const long_t loadScreenStart = System::currentTimeMillis();
     sndManager->playStreaming("", 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-    if (oldWorld != nullptr)
+    if (oldWorld != nullptr && !ps2MultiplayerExit)
         oldWorld->saveWorldIndirectly(loadingScreen);
 
     theWorld = world;

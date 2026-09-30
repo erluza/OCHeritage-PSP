@@ -13,6 +13,9 @@
 #include "Tessellator.h"
 #include "World.h"
 #include "platform/PlatformTuning.h"
+#if PLATFORM_PS2
+#include "ps2/diagnostics/Ps2OptimizationValidation.h"
+#endif
 #include "platform/RenderAPI.h"
 
 EffectRenderer::EffectRenderer(World *world, RenderEngine *renderengine)
@@ -33,7 +36,12 @@ void EffectRenderer::addEffect(EntityFX *entityfx)
 		return;
     int_t i = entityfx->getFXLayer();
     if ((int_t)fxLayers[i].size() >= PLATFORM_MAX_PARTICLES_PER_LAYER)
+    {
+#ifdef PS2_OPTIMIZATION_VALIDATION
+        Ps2OptimizationValidation::particleLayerCapEviction();
+#endif
         fxLayers[i].erase(fxLayers[i].begin());
+    }
 	fxLayers[i].emplace_back(entityfx);
 }
 
