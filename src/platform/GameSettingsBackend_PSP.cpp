@@ -13,6 +13,7 @@ void platformGameSettingsInitialize(GameSettings& settings)
 }
 
 void platformGameSettingsResetControlBindings(GameSettings&) {}
+void platformGameSettingsApplyLegacyCrafting(GameSettings&) {}
 int_t platformGameSettingsDefaultChunkUpdates() { return 1; }
 int_t platformGameSettingsDefaultConnectedTextures() { return 0; }
 

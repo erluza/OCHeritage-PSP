@@ -402,13 +402,13 @@
 // 64 / 128 scatter attempts of WorldGenFlowers / WorldGenTallGrass.
 #  define PLATFORM_POPULATE_LAKES                      1
 #  define PLATFORM_POPULATE_WORLDGEN_ANIMALS           (PLATFORM_PSP ? 0 : 1)
-#  define PLATFORM_FLOWER_PLACEMENT_ATTEMPTS           64
-#  define PLATFORM_TALL_GRASS_PLACEMENT_ATTEMPTS       128
+#  define PLATFORM_FLOWER_PLACEMENT_ATTEMPTS           (PLATFORM_PSP ? 16 : 64)
+#  define PLATFORM_TALL_GRASS_PLACEMENT_ATTEMPTS       (PLATFORM_PSP ? 32 : 128)
 #  define PLATFORM_POPULATE_TREE_BONUS                  (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_TREE_BONUS : 0)
 // Tree and grass density knobs, see the PS2 table. -1 / -1 / 1 / 50 are the
 // vanilla values.
-#  define PLATFORM_POPULATE_TREES_PER_CHUNK_MAX         -1
-#  define PLATFORM_POPULATE_GRASS_PER_CHUNK_MAX         -1
+#  define PLATFORM_POPULATE_TREES_PER_CHUNK_MAX         (PLATFORM_PSP ? 2 : -1)
+#  define PLATFORM_POPULATE_GRASS_PER_CHUNK_MAX         (PLATFORM_PSP ? 4 : -1)
 #  define PLATFORM_POPULATE_JUNGLE_HUGE_TREES           1
 #  define PLATFORM_POPULATE_JUNGLE_VINES                (PLATFORM_PSP ? 20 : 50)
 #  define PLATFORM_POPULATE_CLAY_VEINS                 (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_CLAY_VEINS : 10)
