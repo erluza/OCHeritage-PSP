@@ -45,7 +45,7 @@ void Teleporter::placeInPortal(World *world, Entity *entity)
 		}
 	}
 
-	entity->setLocationAndAngles((double)baseX, (double)baseY, (double)baseZ, entity->rotationYaw, 0.0f);
+	entity->setLocationAndAngles((double)baseX + 0.5, (double)baseY, (double)baseZ + 0.5, entity->rotationYaw, 0.0f);
 	entity->motionX = entity->motionY = entity->motionZ = 0.0;
 }
 

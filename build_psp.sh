@@ -64,6 +64,12 @@ PPSSPP_DIR="/mnt/c/Users/user/Documents/PPSSPP/PSP/GAME/OptiCraft"
 if [ -d "$PPSSPP_DIR" ]; then
     echo "=== Deploying EBOOT.PBP to PPSSPP ($PPSSPP_DIR) ==="
     cp -f "${SRC_DIR}/EBOOT.PBP" "$PPSSPP_DIR/EBOOT.PBP" 2>/dev/null || true
+    if [ -f "${SRC_DIR}/assets.pak" ]; then
+        if [ ! -f "$PPSSPP_DIR/assets.pak" ] || [ $(stat -c%s "${SRC_DIR}/assets.pak") -ne $(stat -c%s "$PPSSPP_DIR/assets.pak" 2>/dev/null || echo 0) ]; then
+            echo "=== Syncing updated assets.pak to PPSSPP ==="
+            cp -f "${SRC_DIR}/assets.pak" "$PPSSPP_DIR/assets.pak" 2>/dev/null || true
+        fi
+    fi
 fi
 
 echo "=== Build Complete! ==="

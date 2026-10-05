@@ -627,59 +627,59 @@ void Entity::moveEntity(double d, double d1, double d2)
 	bool borderCollided = false;
 	if (worldObj != nullptr && worldObj->isLimitedWorld())
 	{
-		constexpr double BOUNDARY = 127.5;
+		const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
 		// Only cancel separating (outward) velocity towards the world edge.
 		// Inward velocity (walking away from edge) and tangential velocity (sliding along perimeter)
 		// are completely preserved so the player never gets stuck or glued.
-		if (posX >= BOUNDARY && d > 0.0)
+		if (posX >= boundary && d > 0.0)
 		{
 			d = 0.0;
 			motionX = 0.0;
 			borderCollided = true;
 		}
-		else if (posX <= -BOUNDARY && d < 0.0)
+		else if (posX <= -boundary && d < 0.0)
 		{
 			d = 0.0;
 			motionX = 0.0;
 			borderCollided = true;
 		}
-		else if (posX + d > BOUNDARY)
+		else if (posX + d > boundary)
 		{
-			d = BOUNDARY - posX;
+			d = boundary - posX;
 			if (d < 0.0) d = 0.0;
 			motionX = 0.0;
 			borderCollided = true;
 		}
-		else if (posX + d < -BOUNDARY)
+		else if (posX + d < -boundary)
 		{
-			d = -BOUNDARY - posX;
+			d = -boundary - posX;
 			if (d > 0.0) d = 0.0;
 			motionX = 0.0;
 			borderCollided = true;
 		}
 
-		if (posZ >= BOUNDARY && d2 > 0.0)
+		if (posZ >= boundary && d2 > 0.0)
 		{
 			d2 = 0.0;
 			motionZ = 0.0;
 			borderCollided = true;
 		}
-		else if (posZ <= -BOUNDARY && d2 < 0.0)
+		else if (posZ <= -boundary && d2 < 0.0)
 		{
 			d2 = 0.0;
 			motionZ = 0.0;
 			borderCollided = true;
 		}
-		else if (posZ + d2 > BOUNDARY)
+		else if (posZ + d2 > boundary)
 		{
-			d2 = BOUNDARY - posZ;
+			d2 = boundary - posZ;
 			if (d2 < 0.0) d2 = 0.0;
 			motionZ = 0.0;
 			borderCollided = true;
 		}
-		else if (posZ + d2 < -BOUNDARY)
+		else if (posZ + d2 < -boundary)
 		{
-			d2 = -BOUNDARY - posZ;
+			d2 = -boundary - posZ;
 			if (d2 > 0.0) d2 = 0.0;
 			motionZ = 0.0;
 			borderCollided = true;
@@ -712,22 +712,56 @@ void Entity::moveEntity(double d, double d1, double d2)
 		{
 			const int_t nextChunkX = MathHelper::floor_double(posX + d) >> 4;
 			const int_t nextChunkZ = MathHelper::floor_double(posZ + d2) >> 4;
-			if (nextChunkX != curChunkX || nextChunkZ != curChunkZ)
+
+			const bool isLimited = worldObj->isLimitedWorld();
+			const int_t minChunk = isLimited && worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMinChunk() : -30000000;
+			const int_t maxChunk = isLimited && worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMaxChunk() : 30000000;
+
+			// In singleplayer, proactively demand/load chunks the player is stepping into within world limits
+			if (!worldObj->multiplayerWorld)
 			{
-				Chunk *targetChunk = worldObj->getChunkIfExists(nextChunkX, nextChunkZ);
-				Chunk *targetChunkX = (nextChunkX != curChunkX) ? worldObj->getChunkIfExists(nextChunkX, curChunkZ) : targetChunk;
-				Chunk *targetChunkZ = (nextChunkZ != curChunkZ) ? worldObj->getChunkIfExists(curChunkX, nextChunkZ) : targetChunk;
-				if ((targetChunk == nullptr || targetChunk->isEmptyChunk()) ||
-				    (targetChunkX == nullptr || targetChunkX->isEmptyChunk()) ||
-				    (targetChunkZ == nullptr || targetChunkZ->isEmptyChunk()))
+				if (nextChunkX != curChunkX && nextChunkX >= minChunk && nextChunkX <= maxChunk)
 				{
-					d = 0.0;
-					d2 = 0.0;
-					d5 = 0.0;
-					d7 = 0.0;
-					motionX = 0.0;
-					motionZ = 0.0;
-					isCollidedHorizontally = true;
+					if (worldObj->getChunkIfExists(nextChunkX, curChunkZ) == nullptr)
+						worldObj->getChunkFromChunkCoords(nextChunkX, curChunkZ);
+				}
+				if (nextChunkZ != curChunkZ && nextChunkZ >= minChunk && nextChunkZ <= maxChunk)
+				{
+					if (worldObj->getChunkIfExists(curChunkX, nextChunkZ) == nullptr)
+						worldObj->getChunkFromChunkCoords(curChunkX, nextChunkZ);
+				}
+			}
+
+			// Decouple X and Z axes completely so that crossing an unready chunk or approaching a border
+			// never cancels tangential sliding along the other axis.
+			if (nextChunkX != curChunkX)
+			{
+				// Outside chunks in limited worlds are handled by world boundary clamp above; skip void barrier
+				if (!isLimited || (nextChunkX >= minChunk && nextChunkX <= maxChunk))
+				{
+					Chunk *targetChunkX = worldObj->getChunkIfExists(nextChunkX, curChunkZ);
+					if (targetChunkX == nullptr || targetChunkX->isEmptyChunk())
+					{
+						d = 0.0;
+						d5 = 0.0;
+						motionX = 0.0;
+						isCollidedHorizontally = true;
+					}
+				}
+			}
+
+			if (nextChunkZ != curChunkZ)
+			{
+				if (!isLimited || (nextChunkZ >= minChunk && nextChunkZ <= maxChunk))
+				{
+					Chunk *targetChunkZ = worldObj->getChunkIfExists(curChunkX, nextChunkZ);
+					if (targetChunkZ == nullptr || targetChunkZ->isEmptyChunk())
+					{
+						d2 = 0.0;
+						d7 = 0.0;
+						motionZ = 0.0;
+						isCollidedHorizontally = true;
+					}
 				}
 			}
 		}

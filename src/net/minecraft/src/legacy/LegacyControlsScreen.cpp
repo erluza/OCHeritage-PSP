@@ -11,6 +11,8 @@
 #include "net/minecraft/src/GameSettings.h"
 #include "net/minecraft/src/GuiButton.h"
 #include "net/minecraft/src/Minecraft.h"
+#include "net/minecraft/src/EnumOptions.h"
+#include "LegacyOptionSlider.h"
 #include "pc/lwjgl/Keyboard.h"
 #include "platform/Input.h"
 #include "platform/PlatformConfig.h"
@@ -32,6 +34,7 @@ constexpr const char *LAYOUT_ART = "/gui/controls/keyboard/layout.png";
 #endif
 
 constexpr int_t BUTTON_ROW_BASE = 7000;
+constexpr int_t BUTTON_SENSITIVITY = 7099;
 constexpr int_t BUTTON_PREVIOUS = 7100;
 constexpr int_t BUTTON_NEXT = 7101;
 constexpr int_t BUTTON_RESET = 7102;
@@ -88,14 +91,14 @@ void LegacyControlsScreen::initGui()
     rowsPerPage = 8;
 #endif
     const int_t columnRows = (rowsPerPage + 1) / 2;
-    configureLegacyLayout(columnRows + 4, true, LegacyOptionsLayoutPreset::Wide);
+    configureLegacyLayout(columnRows + 5, true, LegacyOptionsLayoutPreset::Wide);
     legacyLayout.panelWidth = std::min<int_t>(width - 12, legacyLayout.panelWidth + 48);
     legacyLayout.panelX = (width - legacyLayout.panelWidth) / 2;
     legacyLayout.contentX = legacyLayout.panelX + 8;
     legacyLayout.contentWidth = legacyLayout.panelWidth - 16;
-    // Fit the title, binding columns and footer within small Wii screens.
+    // Fit the title, slider, binding columns and footer within small screens.
     const int_t availableRows = legacyOptionsMaxRows(width, height, LegacyOptionsLayoutPreset::Wide);
-    if (availableRows < columnRows + 4)
+    if (availableRows < columnRows + 5)
     {
         const int_t savedWidth = legacyLayout.panelWidth;
         configureLegacyLayout(std::max<int_t>(1, availableRows), true, LegacyOptionsLayoutPreset::Wide);
@@ -103,7 +106,7 @@ void LegacyControlsScreen::initGui()
         legacyLayout.panelX = (width - savedWidth) / 2;
         legacyLayout.contentX = legacyLayout.panelX + 8;
         legacyLayout.contentWidth = savedWidth - 16;
-        legacyLayout.rowHeight = std::max<int_t>(10, (legacyLayout.panelHeight - 16) / (columnRows + 4) - 1);
+        legacyLayout.rowHeight = std::max<int_t>(10, (legacyLayout.panelHeight - 16) / (columnRows + 5) - 1);
         legacyLayout.rowSpacing = 1;
     }
     artworkAvailable = mc && mc->renderEngine && mc->renderEngine->hasResource(LAYOUT_ART);
@@ -116,16 +119,19 @@ void LegacyControlsScreen::initGui()
     for (int_t i = 0; i < rowsPerPage; ++i)
         controlList.push_back(new LegacyGuiButton(BUTTON_ROW_BASE + i,
             i < columnRows ? x : x + w - buttonWidth,
-            legacyLayout.rowY(1 + i % columnRows), buttonWidth, h, ""));
+            legacyLayout.rowY(2 + i % columnRows), buttonWidth, h, ""));
 
-    const int_t navY = legacyLayout.rowY(columnRows + 1);
+    controlList.push_back(new LegacyOptionSlider(BUTTON_SENSITIVITY, x, legacyLayout.rowY(1), w, h,
+        settings, EnumOptions::SENSITIVITY));
+
+    const int_t navY = legacyLayout.rowY(columnRows + 2);
     const int_t gap = 2;
     const int_t halfWidth = (w - gap) / 2;
     controlList.push_back(new LegacyGuiButton(BUTTON_PREVIOUS, x, navY, halfWidth, h, uiText("Previous")));
     controlList.push_back(new LegacyGuiButton(BUTTON_NEXT, x + halfWidth + gap, navY, w - halfWidth - gap, h, uiText("Next")));
-    controlList.push_back(new LegacyGuiButton(BUTTON_RESET, x, legacyLayout.rowY(columnRows + 2), w, h,
+    controlList.push_back(new LegacyGuiButton(BUTTON_RESET, x, legacyLayout.rowY(columnRows + 3), w, h,
         uiText("Reset to Defaults")));
-    controlList.push_back(new LegacyGuiButton(BUTTON_BACK, x, legacyLayout.rowY(columnRows + 3), w, h, uiText("Back")));
+    controlList.push_back(new LegacyGuiButton(BUTTON_BACK, x, legacyLayout.rowY(columnRows + 4), w, h, uiText("Back")));
 
     rebuildPage();
 }
@@ -179,8 +185,8 @@ void LegacyControlsScreen::rebuildPage()
         page = count - 1;
 
     refreshRowLabels();
-    controlList[rowsPerPage]->enabled = page > 0;
-    controlList[rowsPerPage + 1]->enabled = page + 1 < count;
+    controlList[rowsPerPage + 1]->enabled = page > 0;
+    controlList[rowsPerPage + 2]->enabled = page + 1 < count;
     syncLegacySelection();
 }
 
