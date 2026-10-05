@@ -26,7 +26,7 @@ void Teleporter::placeInPortal(World *world, Entity *entity)
 	}
 
 	const int_t baseX = MathHelper::floor_double(entity->posX);
-	const int_t baseY = MathHelper::floor_double(entity->posY) - 1;
+	const int_t baseY = MathHelper::floor_double(entity->posY);
 	const int_t baseZ = MathHelper::floor_double(entity->posZ);
 	const int_t axisX = 1;
 	const int_t axisZ = 0;

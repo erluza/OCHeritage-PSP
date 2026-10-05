@@ -116,19 +116,27 @@ void LegacyControlsScreen::initGui()
     const int_t h = legacyLayout.rowHeight;
 
     const int_t buttonWidth = std::max<int_t>(24, (w - 100) / 2);
-    for (int_t i = 0; i < rowsPerPage; ++i)
-        controlList.push_back(new LegacyGuiButton(BUTTON_ROW_BASE + i,
-            i < columnRows ? x : x + w - buttonWidth,
-            legacyLayout.rowY(2 + i % columnRows), buttonWidth, h, ""));
+    bindingRowButtons.clear();
 
     controlList.push_back(new LegacyOptionSlider(BUTTON_SENSITIVITY, x, legacyLayout.rowY(1), w, h,
         settings, EnumOptions::SENSITIVITY));
 
+    for (int_t i = 0; i < rowsPerPage; ++i)
+    {
+        GuiButton *rowBtn = new LegacyGuiButton(BUTTON_ROW_BASE + i,
+            i < columnRows ? x : x + w - buttonWidth,
+            legacyLayout.rowY(2 + i % columnRows), buttonWidth, h, "");
+        controlList.push_back(rowBtn);
+        bindingRowButtons.push_back(rowBtn);
+    }
+
     const int_t navY = legacyLayout.rowY(columnRows + 2);
     const int_t gap = 2;
     const int_t halfWidth = (w - gap) / 2;
-    controlList.push_back(new LegacyGuiButton(BUTTON_PREVIOUS, x, navY, halfWidth, h, uiText("Previous")));
-    controlList.push_back(new LegacyGuiButton(BUTTON_NEXT, x + halfWidth + gap, navY, w - halfWidth - gap, h, uiText("Next")));
+    previousPageButton = new LegacyGuiButton(BUTTON_PREVIOUS, x, navY, halfWidth, h, uiText("Previous"));
+    nextPageButton = new LegacyGuiButton(BUTTON_NEXT, x + halfWidth + gap, navY, w - halfWidth - gap, h, uiText("Next"));
+    controlList.push_back(previousPageButton);
+    controlList.push_back(nextPageButton);
     controlList.push_back(new LegacyGuiButton(BUTTON_RESET, x, legacyLayout.rowY(columnRows + 3), w, h,
         uiText("Reset to Defaults")));
     controlList.push_back(new LegacyGuiButton(BUTTON_BACK, x, legacyLayout.rowY(columnRows + 4), w, h, uiText("Back")));
@@ -145,9 +153,9 @@ int_t LegacyControlsScreen::pageCount() const
 
 void LegacyControlsScreen::refreshRowLabels()
 {
-    for (int_t visibleRow = 0; visibleRow < rowsPerPage; ++visibleRow)
+    for (int_t visibleRow = 0; visibleRow < rowsPerPage && visibleRow < static_cast<int_t>(bindingRowButtons.size()); ++visibleRow)
     {
-        GuiButton *button = controlList[visibleRow];
+        GuiButton *button = bindingRowButtons[visibleRow];
         const int_t rowIndex = page * rowsPerPage + visibleRow;
         const bool available = rowIndex >= 0 && rowIndex < static_cast<int_t>(rows.size());
         button->enabled = available;
@@ -185,8 +193,10 @@ void LegacyControlsScreen::rebuildPage()
         page = count - 1;
 
     refreshRowLabels();
-    controlList[rowsPerPage + 1]->enabled = page > 0;
-    controlList[rowsPerPage + 2]->enabled = page + 1 < count;
+    if (previousPageButton != nullptr)
+        previousPageButton->enabled = page > 0;
+    if (nextPageButton != nullptr)
+        nextPageButton->enabled = page + 1 < count;
     syncLegacySelection();
 }
 

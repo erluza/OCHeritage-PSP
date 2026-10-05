@@ -2471,18 +2471,17 @@ void Minecraft::usePortal(int_t targetDimension)
 
     if (thePlayer->isEntityAlive())
     {
-        if (previousDimension < 1)
+        if (targetDimension == 1)
+        {
+            Teleporter().placeInPortal(theWorld, thePlayer);
+        }
+        else if (previousDimension < 1)
         {
             thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ,
                                             thePlayer->rotationYaw, thePlayer->rotationPitch);
             theWorld->updateEntityWithOptionalForce(thePlayer, false);
             Teleporter().placeInPortal(theWorld, thePlayer);
         }
-
-        theWorld->spawnPlayerWithLoadedChunks(thePlayer);
-        thePlayer->preparePlayerToSpawn();
-        playerController->flipPlayer(thePlayer);
-        playerController->initializePlayer(thePlayer);
 
         thePlayer->prevPosX = thePlayer->lastTickPosX = thePlayer->posX;
         thePlayer->prevPosY = thePlayer->lastTickPosY = thePlayer->posY;

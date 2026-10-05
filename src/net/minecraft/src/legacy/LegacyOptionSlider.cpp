@@ -186,10 +186,18 @@ bool LegacyOptionSlider::adjustKeyboard(Minecraft *mc, int_t direction)
         return false;
 
     const float_t previous = readValue();
-    const float_t step = direction < 0 ? -keyboardStep() : keyboardStep();
-    const float_t requested = std::max<float_t>(0.0f, std::min<float_t>(1.0f, previous + step));
+    float_t requested;
+    if (direction > 0 && previous >= 0.999f)
+    {
+        requested = 0.0f;
+    }
+    else
+    {
+        const float_t step = direction < 0 ? -keyboardStep() : keyboardStep();
+        requested = std::max<float_t>(0.0f, std::min<float_t>(1.0f, previous + step));
+    }
     writeValue(requested);
     refreshFromSettings();
-    return sliderValue != previous;
+    return true;
 }
 
