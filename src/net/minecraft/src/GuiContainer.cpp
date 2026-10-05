@@ -22,6 +22,7 @@
 #include "platform/RenderAPI.h"
 #include "platform/PlatformConfig.h"
 #include "pc/lwjgl/Keyboard.h"
+#include "pc/lwjgl/Mouse.h"
 #include <algorithm>
 
 #if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || PLATFORM_PSP
@@ -354,14 +355,16 @@ void GuiContainer::mouseClicked(int_t x, int_t y, int_t button)
 {
 #if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	ContainerSlotNavigator &navigator = ContainerSlotNavigator::instance(getOwnerPlayerIndex());
+	const bool pointerActive = platformMenuPointerActive();
 	// Console confirm buttons are exposed both as controller input and mouse
-	// clicks. When D-pad selection owns the inventory, ignore the synthesized
+	// clicks. When D-pad selection owns the inventory (and the user is not pointing
+	// with a hardware pointer like the Wii remote IR sensor), ignore the synthesized
 	// mouse edge so the selected slot is activated exactly once.
-	if (!mc->isSplitScreenActive() && mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI
+	if (!pointerActive && !mc->isSplitScreenActive() && mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI
 	    && navigator.controllerSelectionActive() && (button == 0 || button == 1))
 		return;
 	Slot *controllerSlot = nullptr;
-	if (navigator.controllerSelectionActive())
+	if (navigator.controllerSelectionActive() && !pointerActive)
 		controllerSlot = navigator.selectedSlot();
 	navigator.notePointerActivity();
 #endif
@@ -406,8 +409,9 @@ void GuiContainer::mouseMovedOrUp(int_t x, int_t y, int_t button)
 {
 #if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	// Button release is not pointer motion. Only actual movement should take
-	// authority away from the controller-selected slot.
-	if (button < 0)
+	// authority away from the controller-selected slot. Wheel and click events
+	// have dx=0 and dy=0 and must not clear the controller slot selection.
+	if (button < 0 && (lwjgl::Mouse::getEventDX() != 0 || lwjgl::Mouse::getEventDY() != 0))
 		ContainerSlotNavigator::instance(getOwnerPlayerIndex()).notePointerActivity();
 #endif
 	(void)x;

@@ -70,6 +70,11 @@ public:
 	void setTerrainType(WorldType *type);
 	bool isLimitedWorld() const;
 	void setLimitedWorld(bool flag);
+	int_t getWorldSizeType() const;
+	void setWorldSizeType(int_t type);
+	int_t getLimitedWorldMinChunk() const;
+	int_t getLimitedWorldMaxChunk() const;
+	double getLimitedWorldBoundary() const;
 
 private:
 	long_t randomSeed;
@@ -93,4 +98,5 @@ private:
 	bool thundering;
 	int_t thunderTime;
 	bool limitedWorld;
+	int_t worldSizeType;
 };

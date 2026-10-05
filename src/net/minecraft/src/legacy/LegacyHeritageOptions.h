@@ -32,5 +32,7 @@ private:
     LegacyOptionCheckbox *legacyUiCheckbox;
     LegacyOptionCheckbox *legacyLookCheckbox;
     LegacyOptionCheckbox *autoJumpCheckbox;
+    LegacyOptionCheckbox *legacyCraftingCheckbox;
+    LegacyOptionCheckbox *legacyCreativeCheckbox;
     LegacyOptionCheckbox *alternativeControlsCheckbox;
 };

@@ -19,6 +19,7 @@
 #include "EntityCrit2FX.h"
 #include "GuiChest.h"
 #include "GuiCrafting.h"
+#include "net/minecraft/src/legacy/LegacyCraftingScreen.h"
 #include "GuiDispenser.h"
 #include "GuiEnchantment.h"
 #include "GuiEditSign.h"
@@ -352,6 +353,17 @@ void EntityPlayerSP::displayGUIChest(IInventory *iinventory)
 
 void EntityPlayerSP::displayWorkbenchGUI(int_t i, int_t j, int_t k)
 {
+	if (mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI && mc->gameSettings->legacyCrafting)
+	{
+		if (mc->isSplitScreenActive())
+		{
+			const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
+			mc->displayPlayerScreen(pIdx, new LegacyCraftingScreen(inventory, worldObj, i, j, k, false, this));
+			return;
+		}
+		mc->displayGuiScreen(new LegacyCraftingScreen(inventory, worldObj, i, j, k, false, this));
+		return;
+	}
 	if (mc != nullptr && mc->isSplitScreenActive())
 	{
 		const int pIdx = (this == mc->thePlayer2) ? 1 : 0;
@@ -420,7 +432,8 @@ void EntityPlayerSP::onEnchantmentCritical(Entity *entity)
 void EntityPlayerSP::onItemPickup(Entity *entity, int_t i)
 {
 	(void)i;
-	mc->effectRenderer->addEffect(new EntityPickupFX(mc->theWorld, entity, this, -0.5f));
+	if (mc != nullptr && mc->effectRenderer != nullptr && mc->theWorld != nullptr && entity != nullptr)
+		mc->effectRenderer->addEffect(new EntityPickupFX(mc->theWorld, entity, this, -0.5f));
 }
 
 int_t EntityPlayerSP::getPlayerArmorValue()

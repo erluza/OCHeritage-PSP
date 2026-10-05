@@ -188,6 +188,10 @@ void GameSettings::loadOptions()
 					legacyLook = value == "true";
 				if (key == "autoJump")
 					autoJump = value == "true";
+				if (key == "legacyCrafting")
+					legacyCrafting = value == "true";
+				if (key == "legacyCreative")
+					legacyCreative = value == "true";
 				if (key == "legacyGuiScaleRestore")
 				{
 					legacyGuiScaleRestore = parseIntJava(value);
@@ -400,7 +404,7 @@ void GameSettings::saveOptions()
 		"music", "sound", "invertYMouse", "mouseSensitivity", "fov", "viewDistance",
 		"guiScale", "particles", "bobView", "anaglyph3d", "advancedOpengl", "fpsLimit",
 		"difficulty", "fancyGraphics", "ao", "skin", "lastServer", "lang", "playerName", "selectedSkin", "selectedSkinP2", "legacyUI",
-		"legacyLook", "autoJump", "legacyGuiScaleRestore",
+		"legacyLook", "autoJump", "legacyCrafting", "legacyCreative", "legacyGuiScaleRestore",
 		"alternativeControllerLayout", "wiiAlternativeControls", "controllerDeadzone", "wiiStickDeadzone",
 		"ofFogFancy", "ofFogOff", "ofFogStart", "ofLoadFar", "ofPreloadedChunks", "ofOcclusionFancy",
 		"ofSmoothFps", "ofSmoothInput", "ofBrightness", "ofAoLevel", "ofClouds",
@@ -479,6 +483,8 @@ void GameSettings::saveOptions()
 	printwriter << "legacyUI:" << (legacyUI ? "true" : "false") << "\n";
 	printwriter << "legacyLook:" << (legacyLook ? "true" : "false") << "\n";
 	printwriter << "autoJump:" << (autoJump ? "true" : "false") << "\n";
+	printwriter << "legacyCrafting:" << (legacyCrafting ? "true" : "false") << "\n";
+	printwriter << "legacyCreative:" << (legacyCreative ? "true" : "false") << "\n";
 	printwriter << "legacyGuiScaleRestore:" << legacyGuiScaleRestore << "\n";
 	printwriter << "alternativeControllerLayout:" << (alternativeControllerLayout ? "true" : "false") << "\n";
 	printwriter << "controllerDeadzone:" << controllerDeadzone << "\n";

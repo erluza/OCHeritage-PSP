@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "World.h"
+#include "WorldInfo.h"
 #include "WorldProvider.h"
 #include "Chunk.h"
 #include "EmptyChunk.h"
@@ -288,7 +289,9 @@ bool ChunkProvider::canChunkExist(int_t i, int_t j) const
 {
 	if (worldObj != nullptr && worldObj->isLimitedWorld())
 	{
-		if (i < -8 || i > 7 || j < -8 || j > 7)
+		const int_t minChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMinChunk() : -8;
+		const int_t maxChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMaxChunk() : 7;
+		if (i < minChunk || i > maxChunk || j < minChunk || j > maxChunk)
 			return false;
 	}
 	const int_t minX = JavaArithmetic::intSub(curChunkX, chunkLoadRadius);
@@ -873,7 +876,9 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 {
 	if (worldObj != nullptr && worldObj->isLimitedWorld())
 	{
-		if (i < -8 || i > 7 || j < -8 || j > 7)
+		const int_t minChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMinChunk() : -8;
+		const int_t maxChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMaxChunk() : 7;
+		if (i < minChunk || i > maxChunk || j < minChunk || j > maxChunk)
 			return blankChunk;
 	}
 #if PLATFORM_BOUNDED_WORLD

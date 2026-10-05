@@ -229,6 +229,14 @@ void updateMenu(const Ps2PadSnapshot& primary, bool specializedMenuNavigation) {
         if (stickScroll <= 0.0f) { stickScroll = interval; lwjgl::Mouse::detail::pushWheel(rsv < 0.0f ? 1 : -1, cx, cy); }
     } else stickScroll = 0.0f;
 
+    static float bumperScroll = 0.0f;
+    if (p.held & (PAD_L1 | PAD_R1)) {
+        bool fire = (p.pressed & (PAD_L1 | PAD_R1)) != 0;
+        bumperScroll -= dt;
+        if (bumperScroll <= 0.0f) { fire = true; bumperScroll = 0.15f; }
+        if (fire) lwjgl::Mouse::detail::pushWheel((p.held & PAD_L1) ? 1 : -1, cx, cy);
+    } else bumperScroll = 0.0f;
+
     if (!specializedMenuNavigation)
     {
         if (p.pressed & PAD_CROSS) lwjgl::Mouse::detail::pushButton(0, true, cx, cy);
@@ -293,7 +301,7 @@ void updateGameplay(const Ps2PadSnapshot& p) {
     if (p.released & PAD_L2) lwjgl::Mouse::detail::pushButton(1, false, 0, 0);
     if (p.pressed & PAD_START) { ps2SetMenuPad(0); ps2SetMenuOwnerPad(0); lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, true); }
     if (p.released & PAD_START) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_ESCAPE, false);
-    if (p.pressed & PAD_SQUARE) ps2SetMenuPad(0);
+    if (p.pressed & (PAD_SQUARE | PAD_TRIANGLE)) ps2SetMenuPad(0);
     if (p.pressed & PAD_R1) lwjgl::Mouse::detail::pushWheel(-1, 0, 0);
     if (p.pressed & PAD_L1) lwjgl::Mouse::detail::pushWheel(1, 0, 0);
     if (p.pressed & PAD_R3) lwjgl::Keyboard::detail::pushKey(lwjgl::Keyboard::KEY_F5, true);

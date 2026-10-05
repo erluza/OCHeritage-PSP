@@ -9,7 +9,7 @@ class WorldSettings
 {
 public:
 	WorldSettings(int64_t seed, int_t gameType, bool mapFeaturesEnabled,
-	              bool hardcoreEnabled, WorldType *terrainType, bool limitedWorld = false);
+	              bool hardcoreEnabled, WorldType *terrainType, int_t worldSizeType = 0);
 
 	int64_t getSeed() const;
 	int_t getGameType() const;
@@ -17,6 +17,7 @@ public:
 	bool isMapFeaturesEnabled() const;
 	WorldType *getTerrainType() const;
 	bool isLimitedWorld() const;
+	int_t getWorldSizeType() const;
 
 private:
 	int64_t seed;
@@ -24,6 +25,6 @@ private:
 	bool mapFeaturesEnabled;
 	bool hardcoreEnabled;
 	WorldType *terrainType;
-	bool limitedWorld;
+	int_t worldSizeType;
 };
 

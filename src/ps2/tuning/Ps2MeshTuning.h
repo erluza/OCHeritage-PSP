@@ -275,10 +275,10 @@
 // wait between tick and render), ~100 ms from click to mesh; 32 fits the
 // whole section in the frame of the edit. Sections dirtied on a border still
 // queue behind the first one.
-#define PS2_URGENT_MESH_BUDGET_MS 32
+#define PS2_URGENT_MESH_BUDGET_MS 14
 // Step cap of the same lane; the clock is the real bound, this only matters
 // on a board whose monotonic clock reads 0. 96 covers a section with margin.
-#define PS2_URGENT_MESH_STEP_CAP 96
+#define PS2_URGENT_MESH_STEP_CAP 32
 // The mark is issued only inside World::PlayerEditMarkScope (the player
 // controller's break / place / use). Measured 2026-09-16 before that scope
 // existed: while flying over new terrain the distance test alone also caught

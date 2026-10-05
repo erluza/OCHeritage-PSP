@@ -248,6 +248,11 @@ void GuiMainMenu::activateLegacySelection()
 
 void GuiMainMenu::initGui()
 {
+    // arregla el bug del f3 al salir del mundo
+    // sin desactivar el debuginfo, ahora al llegar aqui lo desactiva
+    if (mc->gameSettings->showDebugInfo)
+        mc->gameSettings->showDebugInfo = false;
+
     if (viewportTexture >= 0)
         mc->renderEngine->deleteTexture(viewportTexture);
     viewportTexture = -1;
@@ -272,6 +277,9 @@ void GuiMainMenu::initGui()
         else if (month == 12 && day == 24) splashText = "Merry X-mas!";
         else if (month == 1  && day == 1)  splashText = "Happy new year!";
     }
+
+    if (mc != nullptr && mc->sndManager != nullptr)
+        mc->sndManager->playRandomMusicIfReady();
 
     StringTranslate *tr = StringTranslate::getInstance();
     if (mc->gameSettings != nullptr && mc->gameSettings->legacyUI)

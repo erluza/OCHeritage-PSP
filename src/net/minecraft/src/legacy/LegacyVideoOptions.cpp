@@ -66,12 +66,16 @@ void LegacyVideoOptions::initGui()
 #if !(PLATFORM_PS2 || PLATFORM_WII)
     cloudsCheckbox = new LegacyOptionCheckbox(BUTTON_CLOUDS, x, legacyLayout.rowY(row++), w, h,
         uiText("Render Clouds"), legacyCloudsChecked(settings->ofClouds));
-    fogCheckbox = new LegacyOptionCheckbox(BUTTON_FOG, x, legacyLayout.rowY(row++), w, h,
-        uiText("Fog"), legacyFogChecked(settings->ofFogOff));
     controlList.push_back(cloudsCheckbox);
-    controlList.push_back(fogCheckbox);
 #else
     cloudsCheckbox = nullptr;
+#endif
+
+#if !(PLATFORM_PS2 || PLATFORM_WII)
+    fogCheckbox = new LegacyOptionCheckbox(BUTTON_FOG, x, legacyLayout.rowY(row++), w, h,
+        uiText("Fog"), legacyFogChecked(settings->ofFogOff));
+    controlList.push_back(fogCheckbox);
+#else
     fogCheckbox = nullptr;
 #endif
 

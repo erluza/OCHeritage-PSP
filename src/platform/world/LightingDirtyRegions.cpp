@@ -16,6 +16,7 @@ std::size_t LightingDirtyRegions::slotOf(int_t sectionX, int_t sectionY, int_t s
 void LightingDirtyRegions::begin()
 {
     active = true;
+    flushedCount = 0;
 }
 
 void LightingDirtyRegions::add(World *world, int_t x, int_t y, int_t z)
@@ -56,6 +57,7 @@ void LightingDirtyRegions::flush(World *world, Region &region)
     if (!region.used)
         return;
     region.used = false;
+    ++flushedCount;
     if (world != nullptr)
         world->markBlocksDirty(region.minX, region.minY, region.minZ, region.maxX, region.maxY, region.maxZ);
 }

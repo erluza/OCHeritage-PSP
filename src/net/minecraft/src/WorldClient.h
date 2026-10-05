@@ -51,7 +51,7 @@ public:
 	void unloadEntities(const std::vector<Entity *> &list) override;
 	void addEntityToWorld(int_t entityId, Entity *entity);
 	void applyNetworkPosition(Entity *entity, double x, double y, double z, float yaw, float pitch);
-	Entity *getEntityByID(int_t entityId);
+	Entity *getEntityByID(int_t entityId) override;
 	Entity *removeEntityFromWorld(int_t entityId);
 	bool setBlockMetadata(int_t x, int_t y, int_t z, int_t metadata) override;
 	bool setBlockAndMetadata(int_t x, int_t y, int_t z, int_t blockId, int_t metadata) override;

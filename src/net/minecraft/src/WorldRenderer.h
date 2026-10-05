@@ -85,6 +85,16 @@ public:
 	bool lastTerrainBuildStepDidWork() const;
 #if PLATFORM_PC_LEGACY || PLATFORM_PS2 || PLATFORM_WII
 	bool hasPublishedTerrain() const { return isInitialized; }
+	int_t getTotalMeshVertexCount() const
+	{
+#if PLATFORM_PS2
+		return ps2VertexCount[0] + ps2VertexCount[1];
+#elif PLATFORM_WII
+		return wiiBuildVertexCount[0] + wiiBuildVertexCount[1];
+#else
+		return 0;
+#endif
+	}
 #endif
 #if PLATFORM_PC_LEGACY
 	std::uint8_t pcLegacyVisibleFacesFrom(int_t face) const;

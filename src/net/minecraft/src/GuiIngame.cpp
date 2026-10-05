@@ -45,6 +45,9 @@
 #if PLATFORM_PC_LEGACY || defined(PS2_PLATFORM)
 #include "pc/render/PcLegacyHudCachePolicy.h"
 #endif
+#if defined(PS2_PLATFORM)
+#include "ps2/render/Ps2Draw2D.h"
+#endif
 #if PLATFORM_PC_LEGACY
 #include "GLAllocation.h"
 #include "pc/tuning/PcLegacyTuning.h"
@@ -126,6 +129,9 @@ namespace
 
 	void finishOverlayGLState()
 	{
+#if defined(PS2_PLATFORM)
+		ps2_draw_2d_flush_pending();
+#endif
 		renderMatrixMode(RenderMatrixMode::Texture);
 		renderLoadIdentity();
 		renderMatrixMode(RenderMatrixMode::ModelView);

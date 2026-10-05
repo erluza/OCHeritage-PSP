@@ -53,9 +53,9 @@ void joinPlayer2(Minecraft *mc)
         if (mc->ingameGUI != nullptr)
         {
             if (isSpanishLanguage())
-                mc->ingameGUI->addChatMessage("\xc2\xa7" "c[Pantalla Dividida] Solo disponible en mundos Clasicos (256x256).");
+                mc->ingameGUI->addChatMessage("\xc2\xa7" "c[Pantalla Dividida] Solo disponible en mundos Antiguos (256x256).");
             else
-                mc->ingameGUI->addChatMessage("\xc2\xa7" "c[Split-Screen] Only available in Classic (256x256) worlds.");
+                mc->ingameGUI->addChatMessage("\xc2\xa7" "c[Split-Screen] Only available in Old (256x256) worlds.");
         }
         return;
     }

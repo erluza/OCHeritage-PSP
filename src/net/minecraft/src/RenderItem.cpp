@@ -214,6 +214,10 @@ void RenderItem::drawItemIntoGui(FontRenderer* fontrenderer, RenderEngine* rende
         int j1 = i;
         renderengine->bindTexture(renderengine->getTexture("/terrain.png"));
         Block* block = Block::blocksList[j1];
+        renderEnable(RenderCapability::DepthTest);
+        renderDepthMask(true);
+        renderDepthFunc(RenderCompare::LessEqual);
+        renderDisable(RenderCapability::CullFace);
         renderPushMatrix();
         renderTranslate(l - 2, i1 + 3, -3.0f + zLevel);
         renderScale(10.0f, 10.0f, 10.0f);
@@ -233,6 +237,8 @@ void RenderItem::drawItemIntoGui(FontRenderer* fontrenderer, RenderEngine* rende
         renderBlocks->renderBlockOnInventory(block, j, 1.0f);
         renderBlocks->field_31088_b = true;
         renderPopMatrix();
+        renderDisable(RenderCapability::DepthTest);
+        renderEnable(RenderCapability::CullFace);
     } else if (item->func_46058_c()) {
         renderDisable(RenderCapability::Lighting);
         renderengine->bindTexture(renderengine->getTexture("/gui/items.png"));

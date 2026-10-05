@@ -84,6 +84,7 @@
 #include "net/minecraft/src/GuiIngame.h"
 #include "net/minecraft/src/GuiIngameMenu.h"
 #include "net/minecraft/src/GuiInventory.h"
+#include "net/minecraft/src/legacy/LegacyCraftingScreen.h"
 #include "net/minecraft/src/StringTranslate.h"
 #include "net/minecraft/src/GuiContainerCreative.h"
 #include "net/minecraft/src/GuiMainMenu.h"
@@ -2086,6 +2087,25 @@ void Minecraft::runTick()
                 displayGuiScreen(new GuiInventory(thePlayer));
         }
 
+        while (gameSettings->keyBindCrafting != nullptr && gameSettings->keyBindCrafting->isPressed())
+        {
+            if (playerController->isInCreativeMode() || !gameSettings->legacyCrafting)
+                continue;
+            if (isSplitScreenActive())
+            {
+                if (isPlayerScreenActive(0))
+                    closePlayerScreen(0);
+                else
+                {
+                    if (gameSettings->legacyUI)
+                        displayPlayerScreen(0, new LegacyCraftingScreen(thePlayer->inventory, theWorld, 0, 0, 0, true, thePlayer));
+                }
+                continue;
+            }
+            if (gameSettings->legacyUI)
+                displayGuiScreen(new LegacyCraftingScreen(thePlayer->inventory, theWorld, 0, 0, 0, true, thePlayer));
+        }
+
         while (gameSettings->keyBindDrop->isPressed())
         {
             if (!isPlayerScreenActive(0))
@@ -2202,6 +2222,11 @@ void Minecraft::runTick()
             effectRenderer->updateEffects();
             ClientProfiler::tickPhase("effects", System::nanoTime() - clientPhaseStartNs);
         }
+    }
+    else
+    {
+        if (sndManager != nullptr)
+            sndManager->playRandomMusicIfReady();
     }
 
     systemTime = System::currentTimeMillis();
@@ -2729,6 +2754,11 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
         renderEngine->setBackgroundTextureLoadingEnabled(true);
     }
 
+    if (world != nullptr && sndManager != nullptr)
+    {
+        sndManager->triggerMusicNow();
+    }
+
 
     systemTime = 0L;
 }
@@ -2746,11 +2776,18 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
     bool ownsBedSpawn = false;
     bool flag1 = true;
 
+    IChunkProvider *ichunkprovider = theWorld->getIChunkProvider();
+
     if (thePlayer != nullptr && !flag)
     {
         chunkcoordinates = thePlayer->getPlayerSpawnCoordinate();
         if (chunkcoordinates != nullptr)
         {
+            // Configure chunk cache over bed location prior to bed validity check.
+            // In bounded worlds / memory-constrained platforms, chunks outside the current
+            // player position return blankChunk (air), which erroneously triggers "tile.bed.notValid".
+            configureChunkProviderCache(ichunkprovider, chunkcoordinates->x >> 4, chunkcoordinates->z >> 4, gameSettings->renderDistance);
+
             chunkcoordinates1 = EntityPlayer::getNearestBedSpawnLocation(theWorld, chunkcoordinates);
             ownsBedSpawn = chunkcoordinates1 != nullptr;
             if (chunkcoordinates1 == nullptr)
@@ -2765,7 +2802,6 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
         flag1 = false;
     }
 
-    IChunkProvider *ichunkprovider = theWorld->getIChunkProvider();
     configureChunkProviderCache(ichunkprovider, chunkcoordinates1->x >> 4, chunkcoordinates1->z >> 4, gameSettings->renderDistance);
 
     theWorld->setSpawnLocation();

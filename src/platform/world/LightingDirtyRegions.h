@@ -28,6 +28,7 @@ public:
     // is ever lost.
     void add(World *world, int_t x, int_t y, int_t z);
     void end(World *world);
+    int getFlushedCount() const { return flushedCount; }
 
 private:
     struct Region
@@ -41,8 +42,9 @@ private:
     };
 
     static std::size_t slotOf(int_t sectionX, int_t sectionY, int_t sectionZ);
-    static void flush(World *world, Region &region);
+    void flush(World *world, Region &region);
 
     bool active = false;
+    int flushedCount = 0;
     std::array<Region, SLOT_COUNT> regions{};
 };

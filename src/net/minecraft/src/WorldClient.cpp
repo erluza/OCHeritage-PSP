@@ -1040,7 +1040,10 @@ void WorldClient::addEntityToWorld(int_t entityId, Entity *entity)
 
 Entity *WorldClient::getEntityByID(int_t entityId)
 {
-	return static_cast<Entity *>(entityHash->lookup(entityId));
+	Entity *entity = entityHash != nullptr ? static_cast<Entity *>(entityHash->lookup(entityId)) : nullptr;
+	if (entity != nullptr)
+		return entity;
+	return World::getEntityByID(entityId);
 }
 
 Entity *WorldClient::removeEntityFromWorld(int_t entityId)

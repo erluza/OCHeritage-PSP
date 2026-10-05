@@ -22,6 +22,7 @@ public:
 protected:
 	void drawGuiContainerBackgroundLayer(float_t partialTick) override;
 	void actionPerformed(GuiButton *button) override;
+	void keyTyped(char_t c, int_t key) override;
 
 private:
 	void displayDebuffEffects();

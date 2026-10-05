@@ -41,6 +41,7 @@ public:
 	// after editing one of the wii*Jump/Sneak/Drop/Inventory fields below,
 	// same as GuiDeadzoneSettings calling PlatformUserSettings directly.
 	void syncControllerBindingsToPlatform();
+	void applyLegacyCraftingBindings();
 
 private:
 	void setDefaults();
@@ -89,6 +90,7 @@ public:
 	KeyBinding *keyBindRight;
 	KeyBinding *keyBindJump;
 	KeyBinding *keyBindInventory;
+	KeyBinding *keyBindCrafting;
 	KeyBinding *keyBindDrop;
 	KeyBinding *keyBindChat;
 	KeyBinding *keyBindPlayerList;
@@ -114,6 +116,8 @@ public:
 	bool legacyUI;
 	bool legacyLook;
 	bool autoJump;
+	bool legacyCrafting;
+	bool legacyCreative;
 	int_t renderBackend;
 	bool alternativeControllerLayout;
 	// Platform-neutral controller settings consumed through PlatformUserSettings.

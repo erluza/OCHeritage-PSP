@@ -87,12 +87,12 @@ public:
 
 protected:
 	FontRenderer *fontRenderer;
+	virtual bool isJavaUiKeyboardNavigationEnabled() const;
 
 public:
 	GuiParticle *guiParticles;  // field_25091_h
 
 private:
-	bool isJavaUiKeyboardNavigationEnabled() const;
 	void syncKeyboardSelection();
 	bool moveKeyboardSelection(int_t direction);
 	bool activateKeyboardSelection();

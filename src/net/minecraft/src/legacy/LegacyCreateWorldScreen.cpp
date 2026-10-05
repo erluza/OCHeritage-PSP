@@ -256,7 +256,8 @@ bool LegacyCreateWorldScreen::adjustSelection(int_t direction)
 #if PLATFORM_PSP
         return false;
 #else
-        limitedWorld = !limitedWorld;
+        worldSizeType = (worldSizeType + (direction > 0 ? 1 : 2)) % 3;
+        limitedWorld = (worldSizeType != 0);
         updateButtonText();
         mc->sndManager->playSoundFX("random.focus", 1.0f, 1.0f);
         return true;

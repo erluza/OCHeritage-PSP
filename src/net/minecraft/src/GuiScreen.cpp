@@ -20,6 +20,7 @@
 #include "VirtualKeyboard.h"
 #include "ContainerSlotNavigator.h"
 #include "GuiContainer.h"
+#include "GuiContainerCreative.h"
 #include "Slot.h"
 #endif
 
@@ -703,6 +704,44 @@ void GuiScreen::handleSplitscreenPlayerInput()
 	const int curMouseY = static_cast<int>(mc->getPlayerCursorY(pIdx));
 
 	GuiContainer *gc = dynamic_cast<GuiContainer *>(this);
+	GuiContainerCreative *gcc = dynamic_cast<GuiContainerCreative *>(this);
+	if (gcc != nullptr)
+	{
+		static float s_bumperScrollTimer[2] = { 0.0f, 0.0f };
+		if (input.held & (PLATFORM_TEXT_PREV_PAGE | PLATFORM_TEXT_NEXT_PAGE))
+		{
+			bool fire = (input.pressed & (PLATFORM_TEXT_PREV_PAGE | PLATFORM_TEXT_NEXT_PAGE)) != 0;
+			s_bumperScrollTimer[pIdx] -= 0.05f;
+			if (s_bumperScrollTimer[pIdx] <= 0.0f)
+			{
+				fire = true;
+				s_bumperScrollTimer[pIdx] = 0.15f;
+			}
+			if (fire)
+			{
+				gcc->scrollRows((input.held & PLATFORM_TEXT_PREV_PAGE) ? -1 : 1);
+			}
+		}
+		else
+		{
+			s_bumperScrollTimer[pIdx] = 0.0f;
+		}
+
+		static float s_stickScrollTimer[2] = { 0.0f, 0.0f };
+		if (pad.connected && std::abs(pad.rightY) > 0.35f)
+		{
+			s_stickScrollTimer[pIdx] -= 0.05f;
+			if (s_stickScrollTimer[pIdx] <= 0.0f)
+			{
+				s_stickScrollTimer[pIdx] = 0.15f;
+				gcc->scrollRows(pad.rightY < 0.0f ? -1 : 1);
+			}
+		}
+		else
+		{
+			s_stickScrollTimer[pIdx] = 0.0f;
+		}
+	}
 
 	static bool s_crossHeld[2] = { false, false };
 	static bool s_squareHeld[2] = { false, false };
