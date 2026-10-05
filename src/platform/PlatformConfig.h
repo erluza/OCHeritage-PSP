@@ -57,14 +57,14 @@
 // Game-side optimization policies. These describe the reason a code path exists
 // instead of naming the console that first needed it.
 #ifndef PLATFORM_CACHE_NEAREST_PLAYER
-#  define PLATFORM_CACHE_NEAREST_PLAYER (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY)
+#  define PLATFORM_CACHE_NEAREST_PLAYER (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY || PLATFORM_PSP)
 #endif
 
 // The Wii takes the throttle too: it is a tick-rate policy over distance, not
 // an arithmetic shortcut, so it does not belong to PLATFORM_CONSOLE_LOW. The
 // radii and divisors it reads come from WiiWorldTuning.h.
 #ifndef PLATFORM_THROTTLE_ENTITY_AI
-#  define PLATFORM_THROTTLE_ENTITY_AI (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY)
+#  define PLATFORM_THROTTLE_ENTITY_AI (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY || PLATFORM_PSP)
 #endif
 
 // Entities with a chunk retention radius (the Ender Dragon) keep their
@@ -72,14 +72,14 @@
 // A bounded-world concern, not a CPU one: without it the Wii unloads the
 // dragon with its chunk the moment it flies past the cache radius.
 #ifndef PLATFORM_ENTITY_CHUNK_RETENTION
-#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 // java.util.Random's 48-bit LCG step as 32-bit multiplies (see Random::next).
 // Bit-identical to the 64-bit product, so seeds stay compatible; it only
 // matters on cores where a 64-bit multiply is a library call.
 #ifndef PLATFORM_RANDOM_SPLIT_MULTIPLY
-#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_DIRECT_ANALOG_MOVEMENT
@@ -136,7 +136,7 @@
 #endif
 
 #ifndef PLATFORM_FAST_REGION_COMPRESSION
-#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_PROFILE_STREAMING
@@ -160,7 +160,7 @@
 #endif
 
 #ifndef PLATFORM_SINGLE_LOCAL_PLAYER
-#  define PLATFORM_SINGLE_LOCAL_PLAYER PLATFORM_PS2
+#  define PLATFORM_SINGLE_LOCAL_PLAYER (PLATFORM_PS2 || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_BOUNDED_PATHFIND
@@ -282,7 +282,7 @@ declares."
 // This preserves useful back-to-back reuse (compass/watch both read items.png)
 // without retaining every 256x256 colormap/atlas for the whole session.
 #ifndef PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE
-#  define PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE PLATFORM_PS2
+#  define PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE (PLATFORM_PS2 || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_HAS_SLOW_STORAGE

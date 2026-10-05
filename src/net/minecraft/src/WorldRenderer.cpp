@@ -362,6 +362,9 @@ void WorldRenderer::updateRenderer()
 {
 	if (!needsUpdate)
 		return;
+#if PLATFORM_PSP
+	pspLastStepDidWork = false;
+#endif
 
 #if PLATFORM_PC
 	updateOcclusionBox();
@@ -521,6 +524,9 @@ void WorldRenderer::updateRenderer()
 		}
 	}
 
+#if PLATFORM_PSP
+	pspLastStepDidWork = true;
+#endif
 	isChunkLit  = Chunk::isLit;
 	isInitialized = true;
 	tileEntityRenderers = rebuiltTileEntityRenderers;
