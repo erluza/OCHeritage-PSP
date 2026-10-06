@@ -113,21 +113,20 @@ LegacyMainMenuLayout legacyMainMenuForkLayout(int_t screenWidth, int_t screenHei
 
     const int_t menuHeight = safeButtonCount * layout.buttonHeight + (safeButtonCount - 1) * layout.buttonSpacing;
 
-    layout.titleMaxWidth = std::min<int_t>(190, layout.buttonWidth);
+    // Logo centered horizontally at the top ("al medio, arriba")
+    layout.titleMaxWidth = std::min<int_t>(220, screenWidth * 46 / 100);
     layout.titleMaxHeight = std::min<int_t>(36, screenHeight * 14 / 100);
 
     const int_t bannerHeight = std::min<int_t>(layout.titleMaxHeight,
         layout.titleMaxWidth * LEGACY_TITLE_ASPECT_HEIGHT / LEGACY_TITLE_ASPECT_WIDTH);
     const int_t bannerWidth = bannerHeight * LEGACY_TITLE_ASPECT_WIDTH / LEGACY_TITLE_ASPECT_HEIGHT;
 
-    const int_t bottomReserved = legacyScaleToScreen(screenHeight, 22, 14, 22);
-    const int_t availableHeight = screenHeight - bottomReserved;
-    const int_t totalBlockHeight = bannerHeight + 6 + menuHeight;
+    layout.titleY = 10;
+    layout.titleX = (screenWidth - bannerWidth) / 2;
 
-    layout.titleY = std::max<int_t>(8, (availableHeight - totalBlockHeight) / 2);
-    layout.firstButtonY = layout.titleY + bannerHeight + 6;
-
-    layout.titleX = layout.buttonX + (layout.buttonWidth - bannerWidth) / 2;
+    // Buttons positioned on the right, starting cleanly below the banner
+    const int_t bannerBottom = layout.titleY + bannerHeight;
+    layout.firstButtonY = std::max<int_t>(bannerBottom + 8, 54);
 
     return layout;
 }

@@ -632,75 +632,34 @@ void GuiMainMenu::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
     GuiScreen::drawScreen(mouseX, mouseY, partialTick);
 }
 
-void GuiMainMenu::drawPlayerPreview(int_t centerX, int_t feetY, float_t scale, float_t partialTick, int_t, int_t)
+void GuiMainMenu::drawPlayerPreview(int_t centerX, int_t feetY, float_t scale, float_t, int_t, int_t)
 {
     if (mc == nullptr || mc->renderEngine == nullptr || fontRenderer == nullptr)
         return;
 
-    // 1. Draw Nametag above player head
+    // 1. Get currently selected skin
+    const SkinEntry *skin = SkinManager::getSkinById(SkinManager::getSelectedSkinId());
+    if (skin == nullptr && SkinManager::getSkinCount() > 0)
+        skin = SkinManager::getSkin(0);
+
+    // 2. Front preview dimensions: 16x32 aspect ratio
+    const float previewW = scale * 1.20f;
+    const float previewH = previewW * 2.0f;
+    const float previewX = static_cast<float>(centerX) - previewW * 0.5f;
+    const float previewY = static_cast<float>(feetY) - previewH;
+
+    // 3. Draw Nametag above player head
     std::string username = "Player";
     if (mc->session != nullptr && !mc->session->username.empty())
         username = mc->session->username;
 
-    // Model height in Minecraft ModelBiped is ~32 units. At scale 54, total height is ~108 pixels.
-    const int_t nameplateY = feetY - static_cast<int_t>(scale * 2.15f);
+    const int_t nameplateY = static_cast<int_t>(previewY) - 12;
     drawCenteredString(fontRenderer, username, centerX, nameplateY, 0xffffff);
 
-    // 2. Prepare 3D rendering state
-    renderEnable(RenderCapability::RescaleNormal);
-    renderEnable(RenderCapability::ColorMaterial);
-    renderClear(RenderClearMask::Depth);
-    renderEnable(RenderCapability::DepthTest);
-    renderPushMatrix();
+    // 4. Draw ground shadow under feet
+    GuiSkinSelector::drawFeetShadow(static_cast<float>(centerX), static_cast<float>(feetY) + 2.0f,
+                                    previewW * 0.45f, 4.0f, 1.0f);
 
-    renderTranslate(static_cast<float_t>(centerX), static_cast<float_t>(feetY), 50.0f);
-    renderScale(-scale, scale, scale);
-    renderRotate(180.0f, 0.0f, 0.0f, 1.0f);
-
-    // Gentle idle pose
-    const float_t idleYaw = -6.0f + MathHelper::sin((static_cast<float_t>(panoramaTimer) + partialTick) * 0.03f) * 2.5f;
-    const float_t idlePitch = MathHelper::cos((static_cast<float_t>(panoramaTimer) + partialTick) * 0.02f) * 1.5f;
-
-    renderRotate(idleYaw, 0.0f, 1.0f, 0.0f);
-
-    renderRotate(135.0f, 0.0f, 1.0f, 0.0f);
-    RenderHelper::enableStandardItemLighting();
-    renderRotate(-135.0f, 0.0f, 1.0f, 0.0f);
-
-    // 3. Bind player skin texture
-    std::string skinPath = SkinManager::getActiveSkinTexture();
-    if (skinPath.empty() || !mc->renderEngine->hasResource(skinPath))
-        skinPath = "/mob/char.png";
-
-    renderBindTexture(mc->renderEngine->getTexture(skinPath));
-    renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    // 4. Render ModelBiped safely
-    ModelBiped *model = mc->field_9242_w;
-    if (model != nullptr)
-    {
-        model->isSneak = false;
-        model->aimedBow = false;
-        model->isRiding = false;
-        model->heldItemRight = 0;
-        model->heldItemLeft = 0;
-        model->onGround = -10000.0f;
-
-        if (model->bipedHead != nullptr) { model->bipedHead->showModel = true; model->bipedHead->rotationPointY = 0.0f; }
-        if (model->bipedHeadwear != nullptr) { model->bipedHeadwear->showModel = true; model->bipedHeadwear->rotationPointY = 0.0f; }
-        if (model->bipedBody != nullptr) { model->bipedBody->showModel = true; model->bipedBody->rotationPointY = 0.0f; model->bipedBody->rotateAngleY = 0.0f; model->bipedBody->rotateAngleX = 0.0f; }
-        if (model->bipedRightArm != nullptr) { model->bipedRightArm->showModel = true; model->bipedRightArm->rotationPointX = -5.0f; model->bipedRightArm->rotationPointZ = 0.0f; }
-        if (model->bipedLeftArm != nullptr) { model->bipedLeftArm->showModel = true; model->bipedLeftArm->rotationPointX = 5.0f; model->bipedLeftArm->rotationPointZ = 0.0f; }
-        if (model->bipedRightLeg != nullptr) { model->bipedRightLeg->showModel = true; model->bipedRightLeg->rotationPointY = 12.0f; }
-        if (model->bipedLeftLeg != nullptr) { model->bipedLeftLeg->showModel = true; model->bipedLeftLeg->rotationPointY = 12.0f; }
-        if (model->bipedCloak != nullptr) model->bipedCloak->showModel = false;
-        if (model->bipedEars != nullptr) model->bipedEars->showModel = false;
-
-        model->render(0.0f, 0.0f, 0.0f, 0.0f, idlePitch, 0.0625f);
-    }
-
-    renderPopMatrix();
-    RenderHelper::disableStandardItemLighting();
-    renderDisable(RenderCapability::RescaleNormal);
-    renderDisable(RenderCapability::DepthTest);
+    // 5. Draw front preview using the exact same logic as in "skins"
+    GuiSkinSelector::drawFrontPreview(mc, zLevel, skin, previewX, previewY, previewW, previewH, 1.0f);
 }

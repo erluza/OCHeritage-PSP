@@ -662,10 +662,17 @@ void GuiSkinSelector::drawFeetShadow(float centerX, float groundY, float radiusX
     renderDisable(RenderCapability::Blend);
 }
 
-void GuiSkinSelector::drawFrontPreview(const SkinEntry *skin, float x, float y, float w, float h, float alpha)
+void GuiSkinSelector::drawFrontPreview(Minecraft *mc, float_t zLevel, const SkinEntry *skin, float x, float y, float w, float h, float alpha)
 {
-    if (skin == nullptr || mc == nullptr || mc->renderEngine == nullptr)
+    if (mc == nullptr || mc->renderEngine == nullptr)
         return;
+
+    SkinEntry defaultEntry{};
+    if (skin == nullptr)
+    {
+        defaultEntry.skinPath = SkinManager::getDefaultSkinTexture();
+        skin = &defaultEntry;
+    }
 
     // If pre-rendered 16x32 front preview is present, draw single quad
     if (!skin->isCustom && !skin->frontPath.empty())
@@ -882,7 +889,7 @@ void GuiSkinSelector::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick
                            skinW * 0.45f, 4.0f, alpha);
 
             // Draw front preview
-            drawFrontPreview(skin, skinX, skinY, skinW, skinH, alpha);
+            drawFrontPreview(mc, zLevel, skin, skinX, skinY, skinW, skinH, alpha);
         }
     }
 

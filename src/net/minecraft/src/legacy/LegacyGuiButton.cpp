@@ -10,8 +10,9 @@
 #include "platform/RenderAPI.h"
 
 LegacyGuiButton::LegacyGuiButton(int_t id, int_t x, int_t y, int_t width, int_t height, const std::string &text,
-    float_t opacityValue)
-    : GuiButton(id, x, y, width, height, text), opacity(legacyGuiButtonClampOpacity(opacityValue)), selected(false)
+    float_t opacityValue, bool alignLeftValue)
+    : GuiButton(id, x, y, width, height, text), opacity(legacyGuiButtonClampOpacity(opacityValue)), selected(false),
+      alignLeft(alignLeftValue)
 {
 }
 
@@ -58,11 +59,16 @@ void LegacyGuiButton::drawButton(Minecraft *mc, int_t mouseX, int_t mouseY)
     }
 
     mouseDragged(mc, mouseX, mouseY);
-    // The same crisp emboss the sliders and the panel labels use. Java's soft
-    // 38 % black shadow smeared the glyphs into the button frame, which read as a
-    // dark, muddy label next to a slider drawn right above it.
-    legacyDrawCenteredOptionText(mc->fontRenderer, mc->fontRenderer->trimStringToWidth(displayString, width - 8), xPosition + width / 2,
-        legacyGuiButtonTextY(yPosition, height), visual.textColor);
+    if (alignLeft)
+    {
+        legacyDrawOptionText(mc->fontRenderer, mc->fontRenderer->trimStringToWidth(displayString, width - 16),
+            xPosition + 12, legacyGuiButtonTextY(yPosition, height), visual.textColor);
+    }
+    else
+    {
+        legacyDrawCenteredOptionText(mc->fontRenderer, mc->fontRenderer->trimStringToWidth(displayString, width - 8),
+            xPosition + width / 2, legacyGuiButtonTextY(yPosition, height), visual.textColor);
+    }
 }
 
 void LegacyGuiButton::setSelected(bool selectedValue)

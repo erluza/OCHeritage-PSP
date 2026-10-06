@@ -21,6 +21,10 @@ public:
     void actionPerformed(GuiButton *button) override;
     bool doesGuiPauseGame() override;
 
+public:
+    static void drawFrontPreview(Minecraft *mc, float_t zLevel, const SkinEntry *skin, float x, float y, float w, float h, float alpha = 1.0f);
+    static void drawFeetShadow(float centerX, float groundY, float radiusX, float radiusY, float alpha = 1.0f);
+
 protected:
     bool allowsPlatformPointerInput() const override { return true; }
     void handleSpecializedMenuInput() override;
@@ -35,8 +39,6 @@ private:
 
     void drawBeveledPanel(int_t left, int_t top, int_t right, int_t bottom, int_t fillColor);
     void drawInsetPanel(int_t left, int_t top, int_t right, int_t bottom, int_t fillColor);
-    void drawFrontPreview(const SkinEntry *skin, float x, float y, float w, float h, float alpha);
-    void drawFeetShadow(float centerX, float groundY, float radiusX, float radiusY, float alpha);
 
     GuiScreen *parentScreen;
     bool isPlayer2Skin;

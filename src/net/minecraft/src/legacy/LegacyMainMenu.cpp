@@ -18,8 +18,9 @@ void legacyCreateMainMenuButtons(std::vector<GuiButton *> &controlList, GuiButto
 
     auto addButton = [&](int_t id, const std::string &label) -> GuiButton *
     {
-        GuiButton *button = new LegacyGuiButton(id, layout.buttonX, layout.firstButtonY + row * stride,
+        LegacyGuiButton *button = new LegacyGuiButton(id, layout.buttonX, layout.firstButtonY + row * stride,
             layout.buttonWidth, layout.buttonHeight, label);
+        button->setAlignLeft(true);
         controlList.push_back(button);
         ++row;
         return button;
