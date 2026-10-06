@@ -69,8 +69,10 @@ bool legacyDrawTitleTexture(Minecraft *mc, const LegacyMainMenuLayout &layout, i
         textureWidth <= 0 || textureHeight <= 0)
         return false;
 
-    const LegacyUiRect rect = legacyFitTitleRect(screenWidth, layout.titleY, layout.titleMaxWidth,
+    LegacyUiRect rect = legacyFitTitleRect(screenWidth, layout.titleY, layout.titleMaxWidth,
         layout.titleMaxHeight, textureWidth, textureHeight);
+    if (layout.titleX >= 0)
+        rect.x = layout.titleX;
     if (rect.width <= 0 || rect.height <= 0)
         return false;
 

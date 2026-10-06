@@ -35,6 +35,7 @@ private:
     void syncLegacySelection();
     void moveLegacySelection(int_t direction);
     void activateLegacySelection();
+    void drawPlayerPreview(int_t centerX, int_t feetY, float_t scale, float_t partialTick, int_t mouseX, int_t mouseY);
 
     float_t updateCounter;
     std::string splashText;

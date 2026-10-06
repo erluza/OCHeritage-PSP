@@ -15,16 +15,13 @@ constexpr int_t LEGACY_MENU_MIN_BUTTON_HEIGHT = 16;
 
 int_t legacyMainMenuButtonCount(bool hideQuitButton)
 {
-#if PLATFORM_PSP
-    return hideQuitButton ? 5 : 6;
-#else
     return hideQuitButton ? 6 : 7;
-#endif
 }
 
 LegacyMainMenuLayout legacyMainMenuLayout(int_t screenWidth, int_t screenHeight, int_t buttonCount)
 {
     LegacyMainMenuLayout layout{};
+    layout.titleX = -1;
     // Legacy keeps the menu column near half the screen width and the button height
     // near a twentieth of the screen. Both used to be absolute, which left a 240 px
     // console with buttons 68 % as wide as the screen running down to 90 % of it.
@@ -90,6 +87,48 @@ LegacyMainMenuLayout legacyMainMenuLayout(int_t screenWidth, int_t screenHeight,
     layout.titleY = scene.titleY;
     layout.titleMaxWidth = scene.titleMaxWidth;
     layout.titleMaxHeight = scene.titleMaxHeight;
+    return layout;
+}
+
+LegacyMainMenuLayout legacyMainMenuForkLayout(int_t screenWidth, int_t screenHeight, int_t buttonCount)
+{
+    LegacyMainMenuLayout layout{};
+    layout.titleX = -1;
+
+    // Check widescreen aspect ratio (roughly >= 16:10 or 16:9, e.g. PSP 480x272)
+    const bool isWidescreen = (screenWidth * 9 >= screenHeight * 14);
+    if (!isWidescreen)
+    {
+        return legacyMainMenuLayout(screenWidth, screenHeight, buttonCount);
+    }
+
+    const int_t safeButtonCount = std::max<int_t>(1, buttonCount);
+
+    layout.buttonWidth = std::min<int_t>(224, std::max<int_t>(150, screenWidth * 46 / 100));
+    layout.buttonHeight = 18;
+    layout.buttonSpacing = 3;
+
+    const int_t rightMargin = std::max<int_t>(16, screenWidth * 4 / 100);
+    layout.buttonX = screenWidth - layout.buttonWidth - rightMargin;
+
+    const int_t menuHeight = safeButtonCount * layout.buttonHeight + (safeButtonCount - 1) * layout.buttonSpacing;
+
+    layout.titleMaxWidth = std::min<int_t>(190, layout.buttonWidth);
+    layout.titleMaxHeight = std::min<int_t>(36, screenHeight * 14 / 100);
+
+    const int_t bannerHeight = std::min<int_t>(layout.titleMaxHeight,
+        layout.titleMaxWidth * LEGACY_TITLE_ASPECT_HEIGHT / LEGACY_TITLE_ASPECT_WIDTH);
+    const int_t bannerWidth = bannerHeight * LEGACY_TITLE_ASPECT_WIDTH / LEGACY_TITLE_ASPECT_HEIGHT;
+
+    const int_t bottomReserved = legacyScaleToScreen(screenHeight, 22, 14, 22);
+    const int_t availableHeight = screenHeight - bottomReserved;
+    const int_t totalBlockHeight = bannerHeight + 6 + menuHeight;
+
+    layout.titleY = std::max<int_t>(8, (availableHeight - totalBlockHeight) / 2);
+    layout.firstButtonY = layout.titleY + bannerHeight + 6;
+
+    layout.titleX = layout.buttonX + (layout.buttonWidth - bannerWidth) / 2;
+
     return layout;
 }
 

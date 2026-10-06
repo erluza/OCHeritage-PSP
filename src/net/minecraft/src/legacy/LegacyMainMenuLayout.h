@@ -20,9 +20,11 @@ struct LegacyMainMenuLayout
     int_t titleY;
     int_t titleMaxWidth;
     int_t titleMaxHeight;
+    int_t titleX = -1;
 };
 
 int_t legacyMainMenuButtonCount(bool hideQuitButton);
 LegacyMainMenuLayout legacyMainMenuLayout(int_t screenWidth, int_t screenHeight, int_t buttonCount);
+LegacyMainMenuLayout legacyMainMenuForkLayout(int_t screenWidth, int_t screenHeight, int_t buttonCount);
 LegacyUiRect legacyFitTitleRect(int_t screenWidth, int_t y, int_t maxWidth, int_t maxHeight,
     int_t textureWidth, int_t textureHeight);

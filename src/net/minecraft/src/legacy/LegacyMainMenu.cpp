@@ -12,7 +12,7 @@ void legacyCreateMainMenuButtons(std::vector<GuiButton *> &controlList, GuiButto
     int_t screenWidth, int_t screenHeight, bool hideQuitButton)
 {
     const int_t buttonCount = legacyMainMenuButtonCount(hideQuitButton);
-    const LegacyMainMenuLayout layout = legacyMainMenuLayout(screenWidth, screenHeight, buttonCount);
+    const LegacyMainMenuLayout layout = legacyMainMenuForkLayout(screenWidth, screenHeight, buttonCount);
     const int_t stride = layout.buttonHeight + layout.buttonSpacing;
     int_t row = 0;
 
@@ -27,10 +27,9 @@ void legacyCreateMainMenuButtons(std::vector<GuiButton *> &controlList, GuiButto
 
     StringTranslate *tr = StringTranslate::getInstance();
     addButton(1, uiText("Play Game"));
-#if !PLATFORM_PSP
     multiplayerButton = addButton(2, tr->translateKey("menu.multiplayer"));
-#else
-    multiplayerButton = nullptr;
+#if PLATFORM_PSP
+    multiplayerButton->enabled = false;
 #endif
     addButton(3, uiText("Mods"));
     addButton(6, "Skins");
