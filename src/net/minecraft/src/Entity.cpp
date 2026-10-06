@@ -626,31 +626,6 @@ void Entity::moveEntity(double d, double d1, double d2)
 		motionY = 0.0;
 		motionZ = 0.0;
 	}
-	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
-	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
-	{
-		const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
-		if (posX >= boundary && d > 0.0)
-		{
-			d = 0.0;
-			motionX = 0.0;
-		}
-		else if (posX <= -boundary && d < 0.0)
-		{
-			d = 0.0;
-			motionX = 0.0;
-		}
-		if (posZ >= boundary && d2 > 0.0)
-		{
-			d2 = 0.0;
-			motionZ = 0.0;
-		}
-		else if (posZ <= -boundary && d2 < 0.0)
-		{
-			d2 = 0.0;
-			motionZ = 0.0;
-		}
-	}
 	double d5 = d;
 	double d6 = d1;
 	double d7 = d2;
@@ -862,6 +837,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 	posX = (boundingBox->minX + boundingBox->maxX) / 2.0;
 	posY = (boundingBox->minY + (double)yOffset) - (double)ySize;
 	posZ = (boundingBox->minZ + boundingBox->maxZ) / 2.0;
+	bool borderCollided = false;
 	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
 	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
 	{
@@ -872,21 +848,25 @@ void Entity::moveEntity(double d, double d1, double d2)
 		{
 			clampedX = -boundary;
 			if (motionX < 0.0) motionX = 0.0;
+			borderCollided = true;
 		}
 		else if (clampedX > boundary)
 		{
 			clampedX = boundary;
 			if (motionX > 0.0) motionX = 0.0;
+			borderCollided = true;
 		}
 		if (clampedZ < -boundary)
 		{
 			clampedZ = -boundary;
 			if (motionZ < 0.0) motionZ = 0.0;
+			borderCollided = true;
 		}
 		else if (clampedZ > boundary)
 		{
 			clampedZ = boundary;
 			if (motionZ > 0.0) motionZ = 0.0;
+			borderCollided = true;
 		}
 		if (clampedX != posX || clampedZ != posZ)
 		{
@@ -895,7 +875,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 			posZ = clampedZ;
 		}
 	}
-	isCollidedHorizontally = d5 != d || d7 != d2;
+	isCollidedHorizontally = d5 != d || d7 != d2 || borderCollided;
 	isCollidedVertically = d6 != d1;
 	onGround = d6 != d1 && d6 < 0.0;
 	if (isPlayer() && worldObj != nullptr && !worldObj->findingSpawnPoint)

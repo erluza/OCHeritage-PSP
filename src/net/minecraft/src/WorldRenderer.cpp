@@ -386,10 +386,13 @@ void WorldRenderer::updateRenderer()
 		{
 			for (int_t ccz = ccz0; ccz <= ccz1; ++ccz)
 			{
-				if (!worldObj->chunkExists(ccx, ccz))
-					worldObj->getChunkFromChunkCoords(ccx, ccz);
-				if (!worldObj->chunkExists(ccx, ccz))
-					return;
+				if (worldObj->isChunkInLoadRadius(ccx, ccz))
+				{
+					if (!worldObj->chunkExists(ccx, ccz))
+						worldObj->getChunkFromChunkCoords(ccx, ccz);
+					if (!worldObj->chunkExists(ccx, ccz))
+						return;
+				}
 			}
 		}
 	}

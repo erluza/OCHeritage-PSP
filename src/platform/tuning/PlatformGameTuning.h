@@ -415,33 +415,33 @@
 #  define PLATFORM_POPULATE_DIRT_VEINS                 (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_DIRT_VEINS : 20)
 #  define PLATFORM_POPULATE_GRAVEL_VEINS               (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_GRAVEL_VEINS : 10)
 #  define PLATFORM_POPULATE_SNOW_PASS                  (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_SNOW_PASS : 1)
-#  define PLATFORM_DEFERRED_POPULATE                   (PLATFORM_PC_LEGACY ? PC_LEGACY_DEFERRED_POPULATE : 0)
+#  define PLATFORM_DEFERRED_POPULATE                   (PLATFORM_PC_LEGACY ? PC_LEGACY_DEFERRED_POPULATE : (PLATFORM_PSP ? 1 : 0))
 // Vegetation and ores decorated at generation, into the chunk buffer, instead
 // of in the 2x2 populate; see ChunkProviderGenerateDecorateLocal.cpp. Off on
 // desktop: it changes generated terrain (trees clipped at chunk borders).
 #  define PLATFORM_CHUNK_LOCAL_DECORATION              0
-#  define PLATFORM_INCREMENTAL_POPULATE                (PLATFORM_PC_LEGACY ? PC_LEGACY_INCREMENTAL_POPULATE : 0)
-#  define PLATFORM_POPULATE_CHUNKS_PER_TICK            (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_CHUNKS_PER_TICK : 0)
-#  define PLATFORM_POPULATE_STEPS_PER_TICK             (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_STEPS_PER_TICK : PLATFORM_POPULATE_CHUNKS_PER_TICK)
+#  define PLATFORM_INCREMENTAL_POPULATE                (PLATFORM_PC_LEGACY ? PC_LEGACY_INCREMENTAL_POPULATE : (PLATFORM_PSP ? 1 : 0))
+#  define PLATFORM_POPULATE_CHUNKS_PER_TICK            (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_CHUNKS_PER_TICK : (PLATFORM_PSP ? 1 : 0))
+#  define PLATFORM_POPULATE_STEPS_PER_TICK             (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_STEPS_PER_TICK : (PLATFORM_PSP ? 8 : PLATFORM_POPULATE_CHUNKS_PER_TICK))
 // See the PS2 branch above: 0 keeps the original stand-down on a tick that
 // published a column.
 #  define PLATFORM_POPULATE_STEPS_AFTER_PUBLISH        0
 #  define PLATFORM_POPULATE_BUDGET_US                  (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_BUDGET_US : (PLATFORM_PSP ? 4000 : 0))
-#  define PLATFORM_POPULATE_SNOW_COLUMNS_PER_STEP      (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_SNOW_COLUMNS_PER_STEP : 256)
+#  define PLATFORM_POPULATE_SNOW_COLUMNS_PER_STEP      (PLATFORM_PC_LEGACY ? PC_LEGACY_POPULATE_SNOW_COLUMNS_PER_STEP : (PLATFORM_PSP ? 16 : 256))
 #  define PLATFORM_GENERATE_MAP_FEATURES               1
-#  define PLATFORM_GENERATE_SYNC_RADIUS                1
-#  define PLATFORM_GENERATE_CHUNKS_PER_TICK            0
-#  define PLATFORM_INCREMENTAL_CHUNK_GENERATION        0
-#  define PLATFORM_GENERATION_STEPS_PER_TICK            0
-#  define PLATFORM_GENERATION_BUDGET_US                 0
+#  define PLATFORM_GENERATE_SYNC_RADIUS                (PLATFORM_PSP ? 0 : 1)
+#  define PLATFORM_GENERATE_CHUNKS_PER_TICK            (PLATFORM_PSP ? 1 : 0)
+#  define PLATFORM_INCREMENTAL_CHUNK_GENERATION        (PLATFORM_PSP ? 1 : 0)
+#  define PLATFORM_GENERATION_STEPS_PER_TICK            (PLATFORM_PSP ? 16 : 0)
+#  define PLATFORM_GENERATION_BUDGET_US                 (PLATFORM_PSP ? 4000 : 0)
 // Per-frame slice of the incremental generator (ChunkProvider::serviceFrameGeneration). 0 off.
-#  define PLATFORM_GENERATION_STEPS_PER_FRAME           0
-#  define PLATFORM_GENERATION_FRAME_BUDGET_US           0
+#  define PLATFORM_GENERATION_STEPS_PER_FRAME           (PLATFORM_PSP ? 8 : 0)
+#  define PLATFORM_GENERATION_FRAME_BUDGET_US           (PLATFORM_PSP ? 3000 : 0)
 // Shared per-frame cap over generation, populate and lighting (console only;
 // see platform/world/StreamingFrameBudget.h). 0 off.
-#  define PLATFORM_STREAMING_FRAME_BUDGET_US            0
-#  define PLATFORM_GENERATION_SOURCE_COLUMNS_PER_STEP   0
-#  define PLATFORM_STRUCTURE_SOURCE_COLUMNS_PER_STEP    0
+#  define PLATFORM_STREAMING_FRAME_BUDGET_US            (PLATFORM_PSP ? 6000 : 0)
+#  define PLATFORM_GENERATION_SOURCE_COLUMNS_PER_STEP   (PLATFORM_PSP ? 16 : 0)
+#  define PLATFORM_STRUCTURE_SOURCE_COLUMNS_PER_STEP    (PLATFORM_PSP ? 289 : 0)
 // MetadataChunkBlock jobs are the unit World::updatingLighting() processes on
 // each rendered frame.  Vanilla's 500 is appropriate when the CPU is idle; a
 // console profile overrides it to keep chunk streaming from monopolising a
