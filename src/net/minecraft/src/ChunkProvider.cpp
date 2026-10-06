@@ -287,7 +287,8 @@ void ChunkProvider::setChunkLoadRadiusFromRenderDistance(int_t renderDistance)
 
 bool ChunkProvider::canChunkExist(int_t i, int_t j) const
 {
-	if (worldObj != nullptr && worldObj->isLimitedWorld())
+	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
+	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
 	{
 		const int_t minChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMinChunk() : -8;
 		const int_t maxChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMaxChunk() : 7;
@@ -874,7 +875,8 @@ bool ChunkProvider::isChunkGenerationPending(int_t i, int_t j) const
 
 Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 {
-	if (worldObj != nullptr && worldObj->isLimitedWorld())
+	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
+	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
 	{
 		const int_t minChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMinChunk() : -8;
 		const int_t maxChunk = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldMaxChunk() : 7;
