@@ -1671,12 +1671,25 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 #endif
 
 #if !PLATFORM_PS2
+#if PLATFORM_PSP
+	if (k == 1)
+	{
+		if (renderBatchRenderers.size() > PLATFORM_MAX_RENDERED_SECTIONS_PER_PASS)
+			renderBatchRenderers.resize(PLATFORM_MAX_RENDERED_SECTIONS_PER_PASS);
+		std::reverse(renderBatchRenderers.begin(), renderBatchRenderers.end());
+	}
+#endif
 	int_t k1 = 0;
 	for (int_t l1 = 0; l1 < 4; l1++)
 		allRenderLists[l1]->reset();
 
+	int_t renderedNow = 0;
 	for (size_t i2 = 0; i2 < renderBatchRenderers.size(); i2++)
 	{
+#if PLATFORM_PSP
+		if (renderedNow >= PLATFORM_MAX_RENDERED_SECTIONS_PER_PASS)
+			break;
+#endif
 		WorldRenderer *worldrenderer = renderBatchRenderers[i2];
 		int_t j2 = -1;
 
@@ -1688,11 +1701,19 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 
 		if (j2 < 0)
 		{
+			if (k1 >= 4)
+			{
+				renderAllRenderLists(k, d);
+				for (int_t l1 = 0; l1 < 4; l1++)
+					allRenderLists[l1]->reset();
+				k1 = 0;
+			}
 			j2 = k1++;
 			allRenderLists[j2]->setup(worldrenderer->posXMinus, worldrenderer->posYMinus, worldrenderer->posZMinus, d1, d2, d3);
 		}
 
 		allRenderLists[j2]->addTerrainRenderer(worldrenderer, k);
+		renderedNow++;
 	}
 
 	renderAllRenderLists(k, d);

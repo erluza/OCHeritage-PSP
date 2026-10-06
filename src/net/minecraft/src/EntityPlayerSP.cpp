@@ -12,6 +12,8 @@
 #include "SoundManager.h"
 #include "StatFileWriter.h"
 #include "World.h"
+#include "WorldProvider.h"
+#include "WorldInfo.h"
 #include "java/String.h"
 #include "AchievementList.h"
 #include "AxisAlignedBB.h"
@@ -208,8 +210,9 @@ void EntityPlayerSP::onLivingUpdate()
 
 	if (isSneaking())
 		sprintToggleTimer = 0;
+	const double horizSpeedSq = motionX * motionX + motionZ * motionZ;
 	if (movementInput != nullptr && isSprinting() &&
-		(movementInput->moveForward < sprintThreshold || isCollidedHorizontally || !hasFoodForSprinting))
+		(movementInput->moveForward < sprintThreshold || (isCollidedHorizontally && horizSpeedSq < 0.005) || !hasFoodForSprinting))
 	{
 		setSprinting(false);
 	}
@@ -253,7 +256,17 @@ void EntityPlayerSP::onLivingUpdate()
 			AxisAlignedBB *candidate = AxisAlignedBB::getBoundingBoxFromPool(
 				boundingBox->minX + dirX * stepDist, boundingBox->minY + stepUp, boundingBox->minZ + dirZ * stepDist,
 				boundingBox->maxX + dirX * stepDist, boundingBox->maxY + stepUp, boundingBox->maxZ + dirZ * stepDist);
-			if (worldObj != nullptr && candidate != nullptr && worldObj->getCollidingBoundingBoxes(this, candidate).empty())
+			bool hitWorldBorder = false;
+			if (worldObj != nullptr && worldObj->isLimitedWorld() && worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
+			{
+				const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
+				if (candidate != nullptr && (candidate->maxX > boundary || candidate->minX < -boundary ||
+				    candidate->maxZ > boundary || candidate->minZ < -boundary))
+				{
+					hitWorldBorder = true;
+				}
+			}
+			if (!hitWorldBorder && worldObj != nullptr && candidate != nullptr && worldObj->getCollidingBoundingBoxes(this, candidate).empty())
 			{
 				movementInput->jump = true;
 			}

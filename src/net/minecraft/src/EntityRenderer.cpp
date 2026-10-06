@@ -140,9 +140,9 @@ namespace
         int forwardZ = 0;
         const double absX = movementX < 0.0 ? -movementX : movementX;
         const double absZ = movementZ < 0.0 ? -movementZ : movementZ;
-        if (absX >= absZ && absX > 0.001)
+        if (absX > 0.001)
             forwardX = movementX > 0.0 ? 1 : -1;
-        else if (absZ > 0.001)
+        if (absZ > 0.001)
             forwardZ = movementZ > 0.0 ? 1 : -1;
 
         int queued = 0;

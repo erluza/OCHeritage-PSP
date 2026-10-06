@@ -877,7 +877,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 			posZ = clampedZ;
 		}
 	}
-	isCollidedHorizontally = d5 != d || d7 != d2 || borderCollided;
+	isCollidedHorizontally = d5 != d || d7 != d2;
 	isCollidedVertically = d6 != d1;
 	onGround = d6 != d1 && d6 < 0.0;
 	if (isPlayer() && worldObj != nullptr && !worldObj->findingSpawnPoint)
@@ -892,7 +892,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 			if (now - s_lastVoidTime > 500)
 			{
 				s_lastVoidTime = now;
-				MC_LOG_INFO("player", "[PLAYER-VOID-TRIGGER] chunk (%d, %d) is %s! pos=(%.2f, %.2f, %.2f) motY=%.3f forced ground!\n",
+				MC_LOG_INFO("player", "[PLAYER-VOID-TRIGGER] chunk (%d, %d) is %s! pos=(%.2f, %.2f, %.2f) motY=%.3f\n",
 				            curChunkX, curChunkZ, (curChunk == nullptr ? "NULL" : "EMPTY"), posX, posY, motionY);
 			}
 			if (motionY < 0.0)
@@ -900,7 +900,6 @@ void Entity::moveEntity(double d, double d1, double d2)
 				motionY = 0.0;
 			}
 			isCollidedVertically = true;
-			onGround = true;
 			fallDistance = 0.0f;
 		}
 	}
