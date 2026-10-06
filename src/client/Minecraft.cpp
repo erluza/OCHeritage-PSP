@@ -1015,10 +1015,25 @@ void Minecraft::run()
                     }
                 }
 
+                const long_t totalFrameNs = System::nanoTime() - clientFrameStartNs;
                 ClientProfiler::frameEnd(
-                    System::nanoTime() - clientFrameStartNs,
+                    totalFrameNs,
                     l2, clientRenderNs, clientTicksThisFrame,
                     WorldRenderer::chunksUpdated, theWorld, renderGlobal);
+
+                const long_t frameMs = totalFrameNs / 1000000LL;
+                if (frameMs > 60LL)
+                {
+                    static long_t s_lastStallFrameLog = 0;
+                    const long_t now = System::currentTimeMillis();
+                    if (now - s_lastStallFrameLog > 400)
+                    {
+                        s_lastStallFrameLog = now;
+                        MC_LOG_INFO("perf", "[STALL-FRAME] frameMs=%lld (ticks=%lld ms, render=%lld ms, ticksRan=%d, chunksUpd=%d)\n",
+                                    frameMs, l2 / 1000000LL, clientRenderNs / 1000000LL,
+                                    clientTicksThisFrame, WorldRenderer::chunksUpdated);
+                    }
+                }
 
                 if (!lwjgl::Display::isActive())
                 {
@@ -2196,7 +2211,19 @@ void Minecraft::runTick()
                 theWorld->field_27172_i--;
             clientPhaseStartNs = System::nanoTime();
             theWorld->updateEntities();
-            ClientProfiler::tickPhase("entities", System::nanoTime() - clientPhaseStartNs);
+            const long_t entitiesNs = System::nanoTime() - clientPhaseStartNs;
+            ClientProfiler::tickPhase("entities", entitiesNs);
+            const long_t entitiesMs = entitiesNs / 1000000LL;
+            if (entitiesMs > 25LL)
+            {
+                static long_t s_lastEntStallLog = 0;
+                const long_t now = System::currentTimeMillis();
+                if (now - s_lastEntStallLog > 400)
+                {
+                    s_lastEntStallLog = now;
+                    MC_LOG_INFO("perf", "[STALL-ENTITIES] updateEntities took %lld ms!\n", entitiesMs);
+                }
+            }
 #if defined(PS2_PLATFORM)
             Ps2SplitScreen::postTick(this);
 #endif
@@ -2206,7 +2233,19 @@ void Minecraft::runTick()
             theWorld->setAllowedMobSpawns(theWorld->difficultySetting > 0, true);
             clientPhaseStartNs = System::nanoTime();
             theWorld->tick();
-            ClientProfiler::tickPhase("worldTick", System::nanoTime() - clientPhaseStartNs);
+            const long_t worldTickNs = System::nanoTime() - clientPhaseStartNs;
+            ClientProfiler::tickPhase("worldTick", worldTickNs);
+            const long_t worldTickMs = worldTickNs / 1000000LL;
+            if (worldTickMs > 20LL)
+            {
+                static long_t s_lastStallTickLog = 0;
+                const long_t now = System::currentTimeMillis();
+                if (now - s_lastStallTickLog > 400)
+                {
+                    s_lastStallTickLog = now;
+                    MC_LOG_INFO("perf", "[STALL-TICK] theWorld->tick() took %lld ms!\n", worldTickMs);
+                }
+            }
         }
         if (!isGamePaused && theWorld != nullptr)
         {

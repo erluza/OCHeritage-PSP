@@ -625,6 +625,7 @@ Chunk *ChunkProvider::prepareChunkInternal(int_t i, int_t j, bool deferGeneratio
 		if (deferGeneration)
 		{
 			enqueueGeneration(i, j);
+			MC_LOG_INFO("chunk", "[CHUNK-DEFER] queued (%d, %d), queueLen=%zu\n", i, j, generationQueue.size());
 			return blankChunk;
 		}
 #endif
@@ -634,11 +635,15 @@ Chunk *ChunkProvider::prepareChunkInternal(int_t i, int_t j, bool deferGeneratio
 		}
 		else
 		{
-#if PLATFORM_PROFILE_STREAMING
 			const long_t generateStartNs = System::nanoTime();
-#endif
 			WorldLoadTrace::step("generate");
 			chunk = chunkProvider->provideChunk(i, j);
+			const long_t genMs = (System::nanoTime() - generateStartNs) / 1000000LL;
+			if (genMs > 10LL)
+			{
+				MC_LOG_INFO("chunk", "[CHUNK-SYNC-GEN] (%d, %d) took %lld ms (blank=%d)\n",
+				            i, j, genMs, chunk == blankChunk ? 1 : 0);
+			}
 #if PLATFORM_PROFILE_STREAMING
 			platformProfileGenerate(System::nanoTime() - generateStartNs);
 #endif
@@ -854,6 +859,7 @@ bool ChunkProvider::drainPendingGeneration(int_t stepBudget, long_t budgetNs, bo
 			{
 				publishPreparedChunk(taskX, taskZ, completed);
 				publishedChunk = true;
+				MC_LOG_INFO("chunk", "[CHUNK-INCR-PUBLISH] (%d, %d) published to map!\n", taskX, taskZ);
 			}
 			else
 			{
@@ -964,7 +970,15 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 			genChunksThisTick++;
 		}
 #endif
-		return prepareChunk(i, j);
+		const long_t prepStartNs = System::nanoTime();
+		Chunk *res = prepareChunk(i, j);
+		const long_t prepMs = (System::nanoTime() - prepStartNs) / 1000000LL;
+		if (prepMs > 10LL)
+		{
+			MC_LOG_INFO("chunk", "[CHUNK-PREPARE] (%d, %d) took %lld ms (blank=%d)\n",
+			            i, j, prepMs, (res == blankChunk ? 1 : 0));
+		}
+		return res;
 	}
 
 	if (it->second != nullptr)
@@ -1289,6 +1303,8 @@ void ChunkProvider::drainPendingPopulate(int_t budget)
 		else
 		{
 			populateQueued.erase(key);
+			MC_LOG_INFO("chunk", "[CHUNK-POPULATE-DONE] (%d, %d) steps=%d, queueLeft=%zu\n",
+			            coord.first, coord.second, batchSteps, populateQueue.size());
 		}
 #if PLATFORM_POPULATE_BUDGET_US > 0
 		if (System::nanoTime() - budgetStartNs >= budgetNs)

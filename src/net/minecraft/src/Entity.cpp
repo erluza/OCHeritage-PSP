@@ -1,5 +1,7 @@
 #include "Entity.h"
 #include "java/Arithmetic.h"
+#include "java/System.h"
+#include "platform/Log.h"
 
 #include <cmath>
 #include <string>
@@ -885,6 +887,14 @@ void Entity::moveEntity(double d, double d1, double d2)
 		Chunk *curChunk = worldObj->getChunkIfExists(curChunkX, curChunkZ);
 		if (curChunk == nullptr || curChunk->isEmptyChunk())
 		{
+			static long_t s_lastVoidTime = 0;
+			const long_t now = System::currentTimeMillis();
+			if (now - s_lastVoidTime > 500)
+			{
+				s_lastVoidTime = now;
+				MC_LOG_INFO("player", "[PLAYER-VOID-TRIGGER] chunk (%d, %d) is %s! pos=(%.2f, %.2f, %.2f) motY=%.3f forced ground!\n",
+				            curChunkX, curChunkZ, (curChunk == nullptr ? "NULL" : "EMPTY"), posX, posY, motionY);
+			}
 			if (motionY < 0.0)
 			{
 				motionY = 0.0;
@@ -915,6 +925,50 @@ void Entity::moveEntity(double d, double d1, double d2)
 	double d10 = posX - d3;
 	double d12 = posZ - d4;
 #endif
+	if (isPlayer())
+	{
+		static int_t s_lastChunkX = 999999;
+		static int_t s_lastChunkZ = 999999;
+		const int_t curChunkX = MathHelper::floor_double(posX) >> 4;
+		const int_t curChunkZ = MathHelper::floor_double(posZ) >> 4;
+		if (curChunkX != s_lastChunkX || curChunkZ != s_lastChunkZ)
+		{
+			MC_LOG_INFO("player", "[PLAYER-CHUNK] chunk=(%d, %d) pos=(%.2f, %.2f, %.2f) onGround=%d\n",
+			            curChunkX, curChunkZ, posX, posY, posZ, onGround ? 1 : 0);
+			s_lastChunkX = curChunkX;
+			s_lastChunkZ = curChunkZ;
+		}
+
+		if (borderCollided)
+		{
+			MC_LOG_INFO("player", "[PLAYER-BORDER] clamped at pos=(%.2f, %.2f) mot=(%.3f, %.3f)\n",
+			            posX, posZ, motionX, motionZ);
+		}
+
+		const double reqDistSq = d5 * d5 + d7 * d7;
+		const double actDistSq = (posX - d3) * (posX - d3) + (posZ - d4) * (posZ - d4);
+		if (reqDistSq > 0.0016 && actDistSq < 0.000025)
+		{
+			static long_t s_lastPegadoTime = 0;
+			const long_t now = System::currentTimeMillis();
+			if (now - s_lastPegadoTime > 400)
+			{
+				s_lastPegadoTime = now;
+				Chunk *curChk = worldObj != nullptr ? worldObj->getChunkIfExists(curChunkX, curChunkZ) : nullptr;
+				const int_t aheadChunkX = MathHelper::floor_double(posX + d5) >> 4;
+				const int_t aheadChunkZ = MathHelper::floor_double(posZ + d7) >> 4;
+				Chunk *aheadChk = worldObj != nullptr ? worldObj->getChunkIfExists(aheadChunkX, aheadChunkZ) : nullptr;
+
+				MC_LOG_INFO("player", "[PLAYER-PEGADO] pos=(%.2f, %.2f, %.2f) curChunk=(%d,%d %s) aheadChunk=(%d,%d %s) req=(%.3f, %.3f) act=(%.4f, %.4f) colH=%d colV=%d ground=%d mot=(%.3f, %.3f, %.3f)\n",
+				            posX, posY, posZ,
+				            curChunkX, curChunkZ, (curChk == nullptr ? "NULL" : (curChk->isEmptyChunk() ? "EMPTY" : "OK")),
+				            aheadChunkX, aheadChunkZ, (aheadChk == nullptr ? "NULL" : (aheadChk->isEmptyChunk() ? "EMPTY" : "OK")),
+				            d5, d7, posX - d3, posZ - d4,
+				            isCollidedHorizontally ? 1 : 0, isCollidedVertically ? 1 : 0, onGround ? 1 : 0,
+				            motionX, motionY, motionZ);
+			}
+		}
+	}
 	if (canTriggerWalking() && !flag && ridingEntity == nullptr)
 	{
 #if PLATFORM_FLOAT_ENTITY_CORE_MATH
