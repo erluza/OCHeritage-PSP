@@ -947,7 +947,7 @@ void Entity::moveEntity(double d, double d1, double d2)
 
 		const double reqDistSq = d5 * d5 + d7 * d7;
 		const double actDistSq = (posX - d3) * (posX - d3) + (posZ - d4) * (posZ - d4);
-		if (reqDistSq > 0.0016 && actDistSq < 0.000025)
+		if (reqDistSq > 0.0004 && actDistSq < 0.0001)
 		{
 			static long_t s_lastPegadoTime = 0;
 			const long_t now = System::currentTimeMillis();

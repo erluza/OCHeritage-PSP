@@ -121,7 +121,7 @@ inline void applyPs2LegacyAtmosphereRgb(Minecraft *mc, float &red, float &green,
 #endif
 }
 
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 inline bool ps2SectionBeyondFog(WorldRenderer *renderer,
 	float eyeX, float eyeY, float eyeZ, float distance)
 {
@@ -1449,7 +1449,7 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 #endif
 
 	EntityLiving *entityliving = mc->renderViewEntity;
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	bool ps2CullTerrainByFog = false;
 	float ps2TerrainCullDistance = 0.0f;
 	float ps2FogEyeX = 0.0f;
@@ -1471,20 +1471,24 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 			// cutoff would become visible, so keep the full pass in those cases.
 			ps2CullTerrainByFog = k == 1 && !Config::isClearWater() &&
 				!entityliving->isPotionActive(Potion::waterBreathing);
-			ps2TerrainCullDistance = PS2_UNDERWATER_TRANSLUCENT_CULL_DISTANCE;
+			ps2TerrainCullDistance = 32.0f;
 		}
 		else if (mc != nullptr && mc->theWorld != nullptr && mc->theWorld->worldProvider != nullptr &&
 			!mc->theWorld->worldProvider->isNether && !Config::isFogOff())
 		{
-			// On the PS2 fixed-grid renderer, EntityRenderer clamps normal
-			// linear fog to the loaded edge. Sections whose entire AABB is past
-			// that edge are fully fogged already, so submitting their expensive
-			// terrain geometry cannot affect the final image. Apply the same
-			// conservative whole-AABB rejection to both opaque and translucent
-			// passes. This matters in villages as well as oceans: pass 0 otherwise
-			// spends several milliseconds drawing sections already replaced by fog.
 			ps2CullTerrainByFog = true;
+#if PLATFORM_PSP
+			int distBlocks = 64;
+			if (mc->gameSettings != nullptr)
+			{
+				distBlocks = (4 - mc->gameSettings->renderDistance) * 32;
+				if (distBlocks < 48) distBlocks = 48;
+				if (distBlocks > 96) distBlocks = 96;
+			}
+			ps2TerrainCullDistance = static_cast<float>(distBlocks);
+#else
 			ps2TerrainCullDistance = static_cast<float>(PLATFORM_VISIBLE_CHUNK_RADIUS * 16);
+#endif
 		}
 
 		if (ps2CullTerrainByFog)
@@ -1536,7 +1540,7 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 			(useOcclusion && !sortedRenderer->isVisible))
 			continue;
 
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 		if (ps2CullTerrainByFog &&
 			ps2SectionBeyondFog(sortedRenderer, ps2FogEyeX, ps2FogEyeY, ps2FogEyeZ,
 				ps2TerrainCullDistance))
