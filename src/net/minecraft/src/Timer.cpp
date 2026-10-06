@@ -2,6 +2,7 @@
 
 #include "java/Arithmetic.h"
 #include "java/System.h"
+#include "platform/PlatformConfig.h"
 
 Timer::Timer(float f) :
 	ticksPerSecond(f),
@@ -61,9 +62,9 @@ void Timer::updateTimer()
 	elapsedPartialTicks += d1 * (double)timerSpeed * (double)ticksPerSecond;
 	elapsedTicks = JavaArithmetic::floatToInt(elapsedPartialTicks);
 	elapsedPartialTicks -= elapsedTicks;
-#if defined(PS2_PLATFORM)
+#if defined(PS2_PLATFORM) || PLATFORM_PSP
 	// Vanilla can try to catch up by running up to 10 game ticks in one rendered
-	// frame. On PS2 that creates a death spiral while chunks/worldgen are slow:
+	// frame. On PS2 and PSP that creates a death spiral while chunks/worldgen are slow:
 	// one long frame queues 10 expensive ticks, those ticks make the next frame
 	// even longer, and the player sees multi-second freezes. Prefer temporary
 	// slow-motion over unbounded catch-up stalls.
