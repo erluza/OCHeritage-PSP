@@ -2744,6 +2744,8 @@ void World::obtainEntitySkin(Entity* entity)
 
 void World::releaseEntitySkin(Entity* entity)
 {
+    if (isActiveClientEntity(entity))
+        return;
     for (size_t i = 0; i < worldAccesses.size(); i++)
     {
         worldAccesses[i]->releaseEntitySkin(entity);
@@ -3686,7 +3688,9 @@ void World::updateEntityWithOptionalForce(Entity* entity, bool flag)
     const int RANGE = 32;
 #endif
     
-    if (flag)
+    const bool isClientPlayer = isActiveClientEntity(entity);
+
+    if (flag && !isClientPlayer)
     {
         bool chunksExist;
 #if PLATFORM_CACHE_ENTITY_CHUNK_EXISTENCE
@@ -3717,7 +3721,7 @@ void World::updateEntityWithOptionalForce(Entity* entity, bool flag)
     entity->prevRotationYaw = entity->rotationYaw;
     entity->prevRotationPitch = entity->rotationPitch;
     
-    if (flag && entity->addedToChunk)
+    if (flag && (entity->addedToChunk || isClientPlayer))
     {
         if (entity->ridingEntity != nullptr)
         {
@@ -6138,6 +6142,16 @@ void World::joinEntityInSurroundings(Entity* entity)
         loadedEntityList.push_back(entity);
         trackLoadedEntityPointer(entity);
         entityCountsDirty = true;
+    }
+
+    if (!entity->addedToChunk)
+    {
+        Chunk *currentChunk = getChunkIfExists(chunkX, chunkZ);
+        if (currentChunk != nullptr)
+        {
+            entity->addedToChunk = true;
+            currentChunk->addEntity(entity);
+        }
     }
 }
 

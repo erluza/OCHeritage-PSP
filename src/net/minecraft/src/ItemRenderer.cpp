@@ -277,8 +277,14 @@ void ItemRenderer::renderItemInFirstPerson(float partialTick) {
 
     float armPitch = player->prevRenderArmPitch + (player->renderArmPitch - player->prevRenderArmPitch) * partialTick;
     float armYaw = player->prevRenderArmYaw + (player->renderArmYaw - player->prevRenderArmYaw) * partialTick;
-    renderRotate((player->rotationPitch - armPitch) * 0.1f, 1.0f, 0.0f, 0.0f);
-    renderRotate((player->rotationYaw - armYaw) * 0.1f, 0.0f, 1.0f, 0.0f);
+    float deltaArmPitch = (player->rotationPitch - armPitch) * 0.1f;
+    float deltaArmYaw = (player->rotationYaw - armYaw) * 0.1f;
+    if (!(deltaArmPitch >= -35.0f && deltaArmPitch <= 35.0f))
+        deltaArmPitch = MathHelper::clamp_float(deltaArmPitch, -20.0f, 20.0f);
+    if (!(deltaArmYaw >= -35.0f && deltaArmYaw <= 35.0f))
+        deltaArmYaw = MathHelper::clamp_float(deltaArmYaw, -20.0f, 20.0f);
+    renderRotate(deltaArmPitch, 1.0f, 0.0f, 0.0f);
+    renderRotate(deltaArmYaw, 0.0f, 1.0f, 0.0f);
 
     ItemStack* itemstack = itemToRender;
     if (!isHeldByInventory(player, itemstack) || !isRenderableStack(itemstack)) {

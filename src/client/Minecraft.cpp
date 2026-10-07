@@ -20,6 +20,7 @@
 #include "mods/ModManager.h"
 
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
@@ -106,7 +107,10 @@
 #include "net/minecraft/src/OpenGlHelper.h"
 #include "net/minecraft/src/PlayerController.h"
 #include "net/minecraft/src/PlayerControllerMP.h"
+#include "net/minecraft/src/PlayerControllerSP.h"
+#include "net/minecraft/src/PlayerControllerCreative.h"
 #include "net/minecraft/src/PlayerControllerTest.h"
+#include "net/minecraft/src/WorldInfo.h"
 #include "net/minecraft/src/RenderBlocks.h"
 #include "net/minecraft/src/RenderEngine.h"
 #include "net/minecraft/src/RenderGlobal.h"
@@ -1829,6 +1833,46 @@ void Minecraft::runTick()
         startCheckHasPaidThread();
     #endif
 
+    static bool s_autoloadChecked = false;
+    if (!s_autoloadChecked && theWorld == nullptr && ticksRan >= 10 && mcDataDir != nullptr)
+    {
+        s_autoloadChecked = true;
+        const std::string autoPath = mcDataDir->toString() + "/autoload.txt";
+        std::ifstream autoFile(autoPath);
+        if (autoFile.is_open())
+        {
+            std::string worldDir;
+            if (std::getline(autoFile, worldDir))
+            {
+                while (!worldDir.empty() && (worldDir.back() == '\r' || worldDir.back() == '\n' || worldDir.back() == ' '))
+                    worldDir.pop_back();
+                if (!worldDir.empty())
+                {
+                    MC_LOG_INFO("autoload", "[AUTOLOAD] Loading world '%s' automatically...\n", worldDir.c_str());
+                    displayGuiScreen(nullptr);
+                    delete playerController;
+                    int gameType = 0;
+                    if (saveLoader != nullptr)
+                    {
+                        WorldInfo *info = saveLoader->getWorldInfo(worldDir);
+                        if (info != nullptr)
+                        {
+                            gameType = info->getGameType();
+                            delete info;
+                        }
+                    }
+                    if (gameType == 0)
+                        playerController = new PlayerControllerSP(this);
+                    else
+                        playerController = new PlayerControllerCreative(this);
+                    startWorld(worldDir, worldDir, static_cast<WorldSettings *>(nullptr));
+                    displayGuiScreen(nullptr);
+                    return;
+                }
+            }
+        }
+    }
+
     long_t clientPhaseStartNs = System::nanoTime();
     statFileWriter->updateStatsSync();
     ClientProfiler::tickPhase("stats", System::nanoTime() - clientPhaseStartNs);
@@ -2190,6 +2234,7 @@ void Minecraft::runTick()
                 ClientProfiler::tickPhase("joinChunks", System::nanoTime() - clientPhaseStartNs);
             }
         }
+
         if (theWorld->getWorldInfo() != nullptr && theWorld->getWorldInfo()->isHardcoreModeEnabled())
             theWorld->difficultySetting = 3;
         else
