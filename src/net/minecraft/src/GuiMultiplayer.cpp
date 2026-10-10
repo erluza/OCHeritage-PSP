@@ -134,6 +134,26 @@ void GuiMultiplayer::loadServerList()
     {
         MC_LOG_WARN("network", "Unable to read servers.dat: %s\n", exception.what());
     }
+
+    const std::string defaultHost = "ut03.holy.gg:25623";
+    const std::string defaultName = "OC Heritage Community Server";
+
+    auto it = std::find_if(serverList.begin(), serverList.end(),
+        [&](const std::shared_ptr<ServerNBTStorage> &s) {
+            return s != nullptr && s->host == defaultHost;
+        });
+
+    if (it == serverList.end())
+    {
+        serverList.insert(serverList.begin(),
+            std::make_shared<ServerNBTStorage>(defaultName, defaultHost));
+    }
+    else if (it != serverList.begin())
+    {
+        std::shared_ptr<ServerNBTStorage> defaultServer = *it;
+        serverList.erase(it);
+        serverList.insert(serverList.begin(), defaultServer);
+    }
 }
 
 void GuiMultiplayer::saveServerList()
