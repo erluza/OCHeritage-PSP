@@ -425,6 +425,11 @@ void EntityRenderer::updateTorchFlicker()
 
 void EntityRenderer::updateLightmap()
 {
+#if PLATFORM_PSP
+    // PSP does not use multitexture lightmap; skip 256 float pow/gamma iterations
+    lightmapUpdateNeeded = false;
+    return;
+#else
     World *world = mc != nullptr ? mc->theWorld : nullptr;
     if (world == nullptr || world->worldProvider == nullptr)
         return;
@@ -516,6 +521,7 @@ void EntityRenderer::updateLightmap()
             rendererUpdateCount, world->worldProvider, mc->gameSettings->ofBrightness,
             world->field_27172_i > 0, mc->gameSettings->legacyLook);
     }
+#endif
 #endif
 }
 

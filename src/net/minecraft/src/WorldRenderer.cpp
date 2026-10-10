@@ -446,11 +446,13 @@ void WorldRenderer::updateRenderer()
 						renderPushMatrix();
 						// Translate to the clip-space origin of this chunk
 						renderTranslate((float)posXClip, (float)posYClip, (float)posZClip);
+#if !PLATFORM_PSP
 						// Slight scale to avoid z-fighting on chunk borders
 						float f = 1.000001f;
 						renderTranslate(-(float)sizeDepth / 2.0f, -(float)sizeHeight / 2.0f, -(float)sizeDepth / 2.0f);
 						renderScale(f, f, f);
 						renderTranslate( (float)sizeDepth / 2.0f,  (float)sizeHeight / 2.0f,  (float)sizeDepth / 2.0f);
+#endif
 						tessellator->startDrawingQuads();
 						tessellator->setTranslationD(-(double)posX, -(double)posY, -(double)posZ);
 					}

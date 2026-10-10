@@ -886,6 +886,62 @@ bool renderCaptureInterleaved(const RenderInterleavedMesh& mesh, RenderCapturedM
         return false;
     if (!append)
         out.clear();
+
+#if PLATFORM_PSP
+    // If incoming mesh is standard 32-byte terrain format (pos at 0, UV at 12, color at 20):
+    // Convert to 24-byte native PSP GE format: [UV (8B), Color (4B), Pos (12B)]
+    // This allows pspgl to submit vertices directly to the GE hardware via DMA without CPU repacking!
+    if (mesh.stride == 32 && mesh.hasTexture && mesh.texCoordOffset == 12 &&
+        mesh.hasColor && mesh.colorOffset == 20 && !mesh.positionShort)
+    {
+        out.stride = 24;
+        out.primitive = mesh.primitive;
+        out.positionShort = false;
+        out.hasTexture = true;
+        out.texCoordOffset = 0;
+        out.hasColor = true;
+        out.colorOffset = 8;
+        out.hasNormals = false;
+        out.normalOffset = 0;
+        out.hasBrightness = false;
+        out.brightnessOffset = 0;
+
+        const size_t oldWords = out.raw.size();
+        const size_t newWords = (static_cast<size_t>(mesh.count) * 24u + 3u) / 4u;
+        out.raw.resize(oldWords + newWords);
+
+        struct PspNativeVertex {
+            float u, v;
+            std::uint32_t col;
+            float x, y, z;
+        };
+
+        PspNativeVertex* dst = reinterpret_cast<PspNativeVertex*>(
+            reinterpret_cast<unsigned char*>(out.raw.data()) + oldWords * 4u);
+        const unsigned char* src = static_cast<const unsigned char*>(mesh.data) +
+            static_cast<size_t>(mesh.first) * mesh.stride;
+
+        for (int i = 0; i < mesh.count; ++i)
+        {
+            const float* pos = reinterpret_cast<const float*>(src + 0);
+            const float* uv = reinterpret_cast<const float*>(src + 12);
+            const std::uint32_t* col = reinterpret_cast<const std::uint32_t*>(src + 20);
+
+            dst[i].u = uv[0];
+            dst[i].v = uv[1];
+            dst[i].col = *col;
+            dst[i].x = pos[0];
+            dst[i].y = pos[1];
+            dst[i].z = pos[2];
+
+            src += 32;
+        }
+
+        out.vertexCount += mesh.count;
+        return true;
+    }
+#endif
+
     if (!out.empty() && (out.stride != mesh.stride || out.primitive != mesh.primitive ||
         out.positionShort != mesh.positionShort ||
         out.hasTexture != mesh.hasTexture || (mesh.hasTexture && out.texCoordOffset != mesh.texCoordOffset) ||
@@ -970,7 +1026,8 @@ bool renderDrawInterleaved(const RenderInterleavedMesh& mesh)
         glEnableClientState(GL_NORMAL_ARRAY);
     }
 
-    glVertexPointer(3, mesh.positionShort ? GL_SHORT : GL_FLOAT, mesh.stride, pointerForOffset(0));
+    const int posOffset = (mesh.stride == 24 && mesh.texCoordOffset == 0) ? 12 : 0;
+    glVertexPointer(3, mesh.positionShort ? GL_SHORT : GL_FLOAT, mesh.stride, pointerForOffset(posOffset));
     glEnableClientState(GL_VERTEX_ARRAY);
     glDrawArrays(static_cast<GLenum>(renderPrimitiveValue(mesh.primitive)), mesh.first, mesh.count);
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -1095,9 +1152,31 @@ void renderEndDisplayList()
 #endif
 }
 
-void renderCallDisplayList(int list)
-{
 #if PLATFORM_PSP
+static void renderDrawCapturedBatched(const RenderCapturedMesh& mesh)
+{
+    if (mesh.empty()) return;
+    const unsigned char* base = reinterpret_cast<const unsigned char*>(mesh.raw.data());
+    if (mesh.stride == 24 && mesh.texCoordOffset == 0)
+    {
+        glTexCoordPointer(2, GL_FLOAT, 24, base + 0);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 24, base + 8);
+        glVertexPointer(3, GL_FLOAT, 24, base + 12);
+    }
+    else
+    {
+        if (mesh.hasTexture)
+            glTexCoordPointer(2, GL_FLOAT, mesh.stride, base + mesh.texCoordOffset);
+        if (mesh.hasColor)
+            glColorPointer(4, GL_UNSIGNED_BYTE, mesh.stride, base + mesh.colorOffset);
+        glVertexPointer(3, mesh.positionShort ? GL_SHORT : GL_FLOAT, mesh.stride,
+                        base + ((mesh.stride == 24 && mesh.texCoordOffset == 0) ? 12 : 0));
+    }
+    glDrawArrays(static_cast<GLenum>(renderPrimitiveValue(mesh.primitive)), 0, mesh.vertexCount);
+}
+
+static void renderCallDisplayListInternal(int list, bool insideBatch)
+{
     if (list <= 0 || static_cast<std::size_t>(list) >= s_pspLists.size())
         return;
 
@@ -1120,7 +1199,12 @@ void renderCallDisplayList(int list)
         {
             case PspDisplayCmdType::DrawCaptured:
                 if (cmd.data.meshIndex < dl.meshes.size())
-                    renderDrawCaptured(dl.meshes[cmd.data.meshIndex]);
+                {
+                    if (insideBatch)
+                        renderDrawCapturedBatched(dl.meshes[cmd.data.meshIndex]);
+                    else
+                        renderDrawCaptured(dl.meshes[cmd.data.meshIndex]);
+                }
                 break;
             case PspDisplayCmdType::PushMatrix:
                 glPushMatrix();
@@ -1144,25 +1228,46 @@ void renderCallDisplayList(int list)
                 glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(cmd.data.integer));
                 break;
             case PspDisplayCmdType::CallList:
-                renderCallDisplayList(cmd.data.integer);
+                renderCallDisplayListInternal(cmd.data.integer, insideBatch);
                 break;
         }
     }
-#else
-    glCallList(static_cast<GLuint>(list));
-#endif
+}
+
+void renderCallDisplayList(int list)
+{
+    renderCallDisplayListInternal(list, false);
 }
 
 void renderCallDisplayLists(int count, const int* lists)
 {
-#if PLATFORM_PSP
     if (lists == nullptr || count <= 0) return;
+
+    // Enable vertex, texture, and color client states once for the whole batch
+    clientActiveTextureCompat(GL_TEXTURE0_ARB);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+
     for (int i = 0; i < count; ++i)
     {
-        renderCallDisplayList(lists[i]);
+        renderCallDisplayListInternal(lists[i], true);
     }
-#else
-    glCallLists(static_cast<GLsizei>(count), GL_INT, lists);
-#endif
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 }
+#else
+void renderCallDisplayList(int list)
+{
+    glCallList(static_cast<GLuint>(list));
+}
+
+void renderCallDisplayLists(int count, const int* lists)
+{
+    glCallLists(static_cast<GLsizei>(count), GL_INT, lists);
+}
+#endif
 

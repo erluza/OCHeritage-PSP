@@ -1478,12 +1478,12 @@ int_t RenderGlobal::renderSortedRenderers(int_t i, int_t j, int_t k, double d)
 		{
 			ps2CullTerrainByFog = true;
 #if PLATFORM_PSP
-			int distBlocks = 64;
+			int distBlocks = 56;
 			if (mc->gameSettings != nullptr)
 			{
-				distBlocks = (4 - mc->gameSettings->renderDistance) * 32;
-				if (distBlocks < 48) distBlocks = 48;
-				if (distBlocks > 96) distBlocks = 96;
+				distBlocks = (4 - mc->gameSettings->renderDistance) * 28;
+				if (distBlocks < 40) distBlocks = 40;
+				if (distBlocks > 80) distBlocks = 80;
 			}
 			ps2TerrainCullDistance = static_cast<float>(distBlocks);
 #else
