@@ -12,13 +12,13 @@ typedef std::uint16_t uchar_t;
 typedef std::int16_t short_t;
 typedef std::uint16_t ushort_t;
 
-#ifndef PS2_PLATFORM
+#if !defined(PS2_PLATFORM) && !defined(PLATFORM_PSP)
 typedef std::int32_t int_t;
 typedef std::uint32_t uint_t;
 typedef std::int64_t long_t;
 typedef std::uint64_t ulong_t;
 #else
-// On the PS2 EE compiler, std::int32_t resolves to 'long int' which breaks
+// On MIPS compilers (PS2 EE, PSP Allegrex), std::int32_t resolves to 'long int' which breaks
 // std::max(int_t, int) deduction. Use plain int/unsigned int instead — both
 // are 32-bit on MIPS and match Java's int/long semantics closely enough.
 typedef int                int_t;

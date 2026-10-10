@@ -22,7 +22,7 @@ float_t legacyPauseButtonOpacity()
 
 int_t legacyPauseButtonCount()
 {
-    return 5;
+    return 6;
 }
 
 bool legacyPauseInputDelayElapsed(long_t openedAtMillis, long_t nowMillis)

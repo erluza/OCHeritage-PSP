@@ -42,7 +42,7 @@ void LegacyHelpOptions::initGui()
         uiText("Controls"),
         uiText("Language"),
         uiText("OptiCraft Options"),
-        uiText("View"),
+        uiText("Camera & View"),
         uiText("Back")
     };
     const int_t ids[] = {

@@ -115,6 +115,7 @@ public:
 	std::string selectedSkinP2;
 	bool legacyUI;
 	bool legacyLook;
+	bool autoJump;
 	bool legacyCrafting;
 	bool legacyCreative;
 	int_t renderBackend;

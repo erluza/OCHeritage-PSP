@@ -9,7 +9,7 @@
 #include "java/String.h"
 #include "java/Arithmetic.h"
 #include "platform/PlatformConfig.h"
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 #include "GLAllocation.h"
 #endif
 #include "GameSettings.h"
@@ -774,6 +774,8 @@ std::vector<std::string> FontRenderer::split(const std::string &s, char delimite
 
 int_t FontRenderer::getCharIndex(char_t c)
 {
+	if (c >= 32 && c <= 126)
+		return c - 32;
 	return String::indexOfUtf16Unit(ChatAllowedCharacters::allowedCharacters(), c);
 }
 

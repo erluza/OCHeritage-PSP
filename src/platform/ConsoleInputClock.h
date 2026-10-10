@@ -1,8 +1,8 @@
 #pragma once
 
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 
-#if defined(PS2_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 #include "platform/time.h"
 #else
 #include <ogc/lwp_watchdog.h>
@@ -19,11 +19,11 @@
 // the clocks each console's own code already paces itself with.
 inline int consoleInputNowMs()
 {
-#if defined(PS2_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 	return (int)(getTimeS() * 1000.0f);
 #else
 	return (int)ticks_to_millisecs(gettime());
 #endif
 }
 
-#endif // PS2_PLATFORM || WII_PLATFORM
+#endif // PS2_PLATFORM || WII_PLATFORM || PSP

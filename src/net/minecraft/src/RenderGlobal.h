@@ -110,7 +110,7 @@ private:
 	void markRenderersForNewPosition(int_t i, int_t j, int_t k);
 #if PLATFORM_CENTER_VERTICAL_RENDERERS
 	void remapCenteredVerticalRendererSlots(int_t newStartSection);
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	int_t chooseConsoleVerticalStartSection(int_t playerBlockY) const;
 #endif
 #endif
@@ -160,10 +160,10 @@ private:
 	// mapping is slot = section - verticalStartSection, not section % renderChunksTall.
 	// markRenderersInRange must use this so block edits dirty the right renderer.
 	int_t verticalStartSection = 0;
-#if (PLATFORM_PS2 || PLATFORM_WII) && PLATFORM_CENTER_VERTICAL_RENDERERS
+#if (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP) && PLATFORM_CENTER_VERTICAL_RENDERERS
 	bool verticalWindowInitialized = false;
 #endif
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 	int_t glRenderListBase = 0;
 #endif
 	Minecraft *mc = nullptr;

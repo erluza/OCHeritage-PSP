@@ -345,8 +345,8 @@ void renderScaleDouble(double x, double y, double z);
 void renderFrustum(double left, double right, double bottom, double top, double nearValue, double farValue);
 void renderOrtho(double left, double right, double bottom, double top, double nearValue, double farValue);
 
-#if PLATFORM_PC
-// Desktop-only retained-mode compatibility used by the original 1.2.5 GL renderer.
+#if PLATFORM_PC || PLATFORM_PSP
+// Desktop and GL-based console retained-mode compatibility.
 int renderGenerateDisplayLists(int count);
 void renderDeleteDisplayLists(int first, int count);
 void renderBeginDisplayList(int list);

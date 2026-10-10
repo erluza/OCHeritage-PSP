@@ -112,6 +112,9 @@ void writeFile(const char* line, McLog::Level level, const char* category)
         return;
 
     std::fputs(line, g_logFile);
+#if PLATFORM_PSP
+    std::fflush(g_logFile);
+#endif
 
     const bool urgent = level == McLog::Level::Error || level == McLog::Level::Warning;
     if (urgent)

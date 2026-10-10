@@ -61,9 +61,12 @@ void LegacyOptionsScreen::updateLegacyPointerHover(int_t mouseX, int_t mouseY)
 
 void LegacyOptionsScreen::moveLegacySelection(int_t direction)
 {
-    if (hoveredControlIndex >= 0)
-        return;
     syncLegacySelection();
+    if (hoveredControlIndex >= 0)
+    {
+        selectedControlIndex = hoveredControlIndex;
+        hoveredControlIndex = -1;
+    }
     const int_t previous = selectedControlIndex;
     selectedControlIndex = legacyNextSelectableButton(controlList, selectedControlIndex, direction);
     legacyApplyMenuSelection(controlList, selectedControlIndex);
@@ -77,6 +80,13 @@ void LegacyOptionsScreen::activateLegacySelection()
     const int_t targetIndex = hoveredControlIndex >= 0 ? hoveredControlIndex : selectedControlIndex;
     if (targetIndex < 0 || targetIndex >= static_cast<int_t>(controlList.size()))
         return;
+    GuiButton *button = controlList[targetIndex];
+    if (button != nullptr && button->adjustKeyboard(mc, 1))
+    {
+        if (mc != nullptr && mc->sndManager != nullptr)
+            mc->sndManager->playSoundFX("random.focus", 1.0f, 1.0f);
+        return;
+    }
     if (mc != nullptr && mc->sndManager != nullptr)
         mc->sndManager->playSoundFX("random.action", 1.0f, 1.0f);
     actionPerformed(controlList[targetIndex]);
@@ -84,12 +94,11 @@ void LegacyOptionsScreen::activateLegacySelection()
 
 void LegacyOptionsScreen::adjustLegacySelection(int_t direction)
 {
-    if (hoveredControlIndex >= 0)
-        return;
     syncLegacySelection();
-    if (selectedControlIndex < 0 || selectedControlIndex >= static_cast<int_t>(controlList.size()))
+    const int_t targetIndex = hoveredControlIndex >= 0 ? hoveredControlIndex : selectedControlIndex;
+    if (targetIndex < 0 || targetIndex >= static_cast<int_t>(controlList.size()))
         return;
-    GuiButton *button = controlList[selectedControlIndex];
+    GuiButton *button = controlList[targetIndex];
     if (button != nullptr && button->adjustKeyboard(mc, direction) && mc != nullptr && mc->sndManager != nullptr)
         mc->sndManager->playSoundFX("random.focus", 1.0f, 1.0f);
 }
@@ -103,7 +112,6 @@ bool LegacyOptionsScreen::handleLegacyNavigationKey(int_t key)
         returnToParent();
         return true;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
     if (key == lwjgl::Keyboard::KEY_UP)
     {
         moveLegacySelection(-1);
@@ -114,12 +122,21 @@ bool LegacyOptionsScreen::handleLegacyNavigationKey(int_t key)
         moveLegacySelection(1);
         return true;
     }
-    if (key == lwjgl::Keyboard::KEY_RETURN)
+    if (key == lwjgl::Keyboard::KEY_LEFT)
+    {
+        adjustLegacySelection(-1);
+        return true;
+    }
+    if (key == lwjgl::Keyboard::KEY_RIGHT)
+    {
+        adjustLegacySelection(1);
+        return true;
+    }
+    if (key == lwjgl::Keyboard::KEY_RETURN || key == lwjgl::Keyboard::KEY_SPACE)
     {
         activateLegacySelection();
         return true;
     }
-#endif
     return false;
 }
 
@@ -134,14 +151,14 @@ void LegacyOptionsScreen::updateScreen()
 {
     GuiScreen::updateScreen();
     syncLegacySelection();
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     // A focused GuiTextField gives the virtual keyboard exclusive ownership of
     // these buttons. Do not move or activate the menu underneath the overlay.
     if (platformTextInputExclusive())
         return;
 
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     std::uint32_t pressed = pad.pressed;
     if (ps2ActionReleaseLatch)
     {

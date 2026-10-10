@@ -17,6 +17,12 @@
 #  define PLATFORM_PRELOAD_LIGHTING_STEPS          0
 #  define PLATFORM_UNLOAD_AFTER_PRELOAD             0
 #  define PLATFORM_DEFER_PORTAL_TRANSITION          1
+#elif PLATFORM_PSP
+#  define PLATFORM_LOAD_TERRAIN_MIN_MS             0
+#  define PLATFORM_LOAD_TERRAIN_WARMUP_MS          0
+#  define PLATFORM_PRELOAD_LIGHTING_STEPS          0
+#  define PLATFORM_UNLOAD_AFTER_PRELOAD             0
+#  define PLATFORM_DEFER_PORTAL_TRANSITION          0
 #else
 #  define PLATFORM_LOAD_TERRAIN_MIN_MS             0
 #  define PLATFORM_LOAD_TERRAIN_WARMUP_MS          0
@@ -42,7 +48,13 @@
 #  else
 #    define PLATFORM_RETURN_TO_MENU_ON_OOM           1
 #  endif
-#  define PLATFORM_RELEASE_OLD_WORLD_BEFORE_PORTAL   1
+#elif PLATFORM_PSP
+#  define PLATFORM_CLIENT_TIMER_HACK_THREAD          0
+#  define PLATFORM_CLIENT_PAID_CHECK                 0
+#  define PLATFORM_SYNC_STATS_ON_GUI_CHANGE          0
+#  define PLATFORM_EXIT_PROCESS_ON_SHUTDOWN          0
+#  define PLATFORM_RETURN_TO_MENU_ON_OOM             0
+#  define PLATFORM_RELEASE_OLD_WORLD_BEFORE_PORTAL   0
 #else
 #  define PLATFORM_CLIENT_TIMER_HACK_THREAD          1
 #  ifdef NO_NETWORK

@@ -1,6 +1,6 @@
 #include "ModelRenderer.h"
 
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 #include "GLAllocation.h"
 #endif
 #include "ModelBase.h"

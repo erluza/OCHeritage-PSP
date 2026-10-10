@@ -37,6 +37,14 @@
 #  endif
 #endif
 
+#ifndef PLATFORM_PSP
+#  if defined(PSP_PLATFORM) || defined(PSP) || defined(__PSP__)
+#    define PLATFORM_PSP 1
+#  else
+#    define PLATFORM_PSP 0
+#  endif
+#endif
+
 // User-facing hardware calibration features.
 #ifndef PLATFORM_HAS_CONTROLLER_CALIBRATION
 #  define PLATFORM_HAS_CONTROLLER_CALIBRATION (PLATFORM_PS2 || PLATFORM_WII)
@@ -49,14 +57,14 @@
 // Game-side optimization policies. These describe the reason a code path exists
 // instead of naming the console that first needed it.
 #ifndef PLATFORM_CACHE_NEAREST_PLAYER
-#  define PLATFORM_CACHE_NEAREST_PLAYER (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY)
+#  define PLATFORM_CACHE_NEAREST_PLAYER (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY || PLATFORM_PSP)
 #endif
 
 // The Wii takes the throttle too: it is a tick-rate policy over distance, not
 // an arithmetic shortcut, so it does not belong to PLATFORM_CONSOLE_LOW. The
 // radii and divisors it reads come from WiiWorldTuning.h.
 #ifndef PLATFORM_THROTTLE_ENTITY_AI
-#  define PLATFORM_THROTTLE_ENTITY_AI (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY)
+#  define PLATFORM_THROTTLE_ENTITY_AI (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PC_LEGACY || PLATFORM_PSP)
 #endif
 
 // Entities with a chunk retention radius (the Ender Dragon) keep their
@@ -64,18 +72,18 @@
 // A bounded-world concern, not a CPU one: without it the Wii unloads the
 // dragon with its chunk the moment it flies past the cache radius.
 #ifndef PLATFORM_ENTITY_CHUNK_RETENTION
-#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 // java.util.Random's 48-bit LCG step as 32-bit multiplies (see Random::next).
 // Bit-identical to the 64-bit product, so seeds stay compatible; it only
 // matters on cores where a 64-bit multiply is a library call.
 #ifndef PLATFORM_RANDOM_SPLIT_MULTIPLY
-#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_DIRECT_ANALOG_MOVEMENT
-#  define PLATFORM_DIRECT_ANALOG_MOVEMENT PLATFORM_PS2
+#  define PLATFORM_DIRECT_ANALOG_MOVEMENT (PLATFORM_PS2 || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_ASYNC_CHUNK_GENERATION
@@ -87,19 +95,19 @@
 // probe alone is ~520 optional files x several spellings of failed opens on
 // every RenderEngine (re)load -- a FAT directory walk each over USB/SD.
 #ifndef PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS
-#  define PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP))
 #endif
 
 #ifndef PLATFORM_OPTIFINE_RANDOM_MOBS
-#  define PLATFORM_OPTIFINE_RANDOM_MOBS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_RANDOM_MOBS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP))
 #endif
 
 #ifndef PLATFORM_OPTIFINE_CUSTOM_FONTS
-#  define PLATFORM_OPTIFINE_CUSTOM_FONTS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_CUSTOM_FONTS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP))
 #endif
 
 #ifndef PLATFORM_LOCAL_STATS
-#  define PLATFORM_LOCAL_STATS (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_LOCAL_STATS (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_ENUMERATE_SAVE_DIRECTORIES
@@ -107,7 +115,7 @@
 #endif
 
 #ifndef PLATFORM_LOCAL_RESOURCES_ONLY
-#  if defined(NO_NETWORK) || PLATFORM_PS2 || PLATFORM_WII
+#  if defined(NO_NETWORK) || PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #    define PLATFORM_LOCAL_RESOURCES_ONLY 1
 #  else
 #    define PLATFORM_LOCAL_RESOURCES_ONLY 0
@@ -128,7 +136,7 @@
 #endif
 
 #ifndef PLATFORM_FAST_REGION_COMPRESSION
-#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_PROFILE_STREAMING
@@ -152,7 +160,7 @@
 #endif
 
 #ifndef PLATFORM_SINGLE_LOCAL_PLAYER
-#  define PLATFORM_SINGLE_LOCAL_PLAYER PLATFORM_PS2
+#  define PLATFORM_SINGLE_LOCAL_PLAYER (PLATFORM_PS2 || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_BOUNDED_PATHFIND
@@ -160,7 +168,7 @@
 #endif
 
 #ifndef PLATFORM_HAS_VIRTUAL_KEYBOARD
-#  define PLATFORM_HAS_VIRTUAL_KEYBOARD (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_HAS_VIRTUAL_KEYBOARD (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_SIMPLE_TRANSPARENT_TERRAIN
@@ -175,7 +183,7 @@
 // re-points both contexts at the new draw buffer while PrimContext stays put,
 // so the every-other-frame old/black screen once blamed on per-context depth
 // state was really FRAME.FBP (see ps2_apply_color_mask).
-#  define PLATFORM_GUI_FORCE_DEPTH_DISABLED (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_GUI_FORCE_DEPTH_DISABLED (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_CHUNK_EDGE_FOG
@@ -183,7 +191,7 @@
 #endif
 
 #ifndef PLATFORM_PC
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #    define PLATFORM_PC 0
 #  else
 #    define PLATFORM_PC 1
@@ -219,7 +227,7 @@
 // What the Wii DID need from the old combined profile is the memory half, which
 // is now PLATFORM_BOUNDED_WORLD below.
 #ifndef PLATFORM_CONSOLE_LOW
-#  if PLATFORM_PS2
+#  if PLATFORM_PS2 || PLATFORM_PSP
 #    define PLATFORM_CONSOLE_LOW 1
 #  else
 #    define PLATFORM_CONSOLE_LOW 0
@@ -274,7 +282,7 @@ declares."
 // This preserves useful back-to-back reuse (compass/watch both read items.png)
 // without retaining every 256x256 colormap/atlas for the whole session.
 #ifndef PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE
-#  define PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE PLATFORM_PS2
+#  define PLATFORM_BOUNDED_DECODED_TEXTURE_CACHE (PLATFORM_PS2 || PLATFORM_PSP)
 #endif
 
 #ifndef PLATFORM_HAS_SLOW_STORAGE
@@ -311,7 +319,7 @@ declares."
 // This is deliberately NOT tied to PLATFORM_CONSOLE_LOW: it is a backend
 // capability question, not a performance budget.
 #ifndef PLATFORM_FONT_IMMEDIATE
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #    define PLATFORM_FONT_IMMEDIATE 1
 #  else
 #    define PLATFORM_FONT_IMMEDIATE 0
@@ -352,7 +360,7 @@ declares."
 // where they are aiming. Both console backends feed lwjgl::Mouse from a stick
 // (PS2) or the Wiimote IR pointer (Wii), so the coordinates are already there.
 #ifndef PLATFORM_SOFTWARE_CURSOR
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #    define PLATFORM_SOFTWARE_CURSOR 1
 #  else
 #    define PLATFORM_SOFTWARE_CURSOR 0

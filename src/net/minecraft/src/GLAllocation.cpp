@@ -4,12 +4,12 @@
 #include <stdexcept>
 #include "platform/RenderAPI.h"
 
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 std::vector<int_t> GLAllocation::displayLists;
 #endif
 std::vector<int_t> GLAllocation::textureNames;
 
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 int_t GLAllocation::generateDisplayLists(int_t count)
 {
     if (count <= 0)
@@ -36,21 +36,28 @@ void GLAllocation::deleteDisplayLists(int_t first)
 
 void GLAllocation::generateTextureNames(std::vector<int_t> &names)
 {
-    renderGenerateTextures(static_cast<int>(names.size()), names.data());
-    for (int_t value : names)
-        textureNames.push_back(value);
+    std::vector<int> rawNames(names.size());
+    renderGenerateTextures(static_cast<int>(rawNames.size()), rawNames.data());
+    for (size_t i = 0; i < names.size(); ++i)
+    {
+        names[i] = rawNames[i];
+        textureNames.push_back(rawNames[i]);
+    }
 }
 
 void GLAllocation::deleteTexturesAndDisplayLists()
 {
     renderResetResources();
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
     for (int_t i = 0; i < static_cast<int_t>(displayLists.size()); i += 2)
         renderDeleteDisplayLists(displayLists[i], displayLists[i + 1]);
     displayLists.clear();
 #endif
 
     if (!textureNames.empty())
-        renderDeleteTextures(static_cast<int>(textureNames.size()), textureNames.data());
+    {
+        std::vector<int> rawNames(textureNames.begin(), textureNames.end());
+        renderDeleteTextures(static_cast<int>(rawNames.size()), rawNames.data());
+    }
     textureNames.clear();
 }

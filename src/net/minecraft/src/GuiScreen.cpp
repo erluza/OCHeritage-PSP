@@ -16,7 +16,7 @@
 #if !PLATFORM_PS2 && !PLATFORM_WII
 #include "SDL_clipboard.h"
 #endif
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 #include "VirtualKeyboard.h"
 #include "ContainerSlotNavigator.h"
 #include "GuiContainer.h"
@@ -43,11 +43,11 @@ namespace
 bool menuPointerInputSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr)
 {
 	const GuiScreen *target = (screen != nullptr) ? screen : (mc != nullptr ? mc->currentScreen : nullptr);
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (target != nullptr && target->suppressesPlatformPointerInput())
 		return true;
 #endif
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	return mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI &&
 	       (target == nullptr || !target->allowsPlatformPointerInput());
 #elif PLATFORM_WII
@@ -64,11 +64,11 @@ bool menuPointerInputSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr
 bool menuCursorSuppressed(Minecraft *mc, const GuiScreen *screen = nullptr)
 {
 	const GuiScreen *target = (screen != nullptr) ? screen : (mc != nullptr ? mc->currentScreen : nullptr);
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (target != nullptr && target->suppressesPlatformPointerInput())
 		return true;
 #endif
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	if (!platformMenuCursorVisible())
 		return true;
 	if (mc == nullptr || mc->gameSettings == nullptr || !mc->gameSettings->legacyUI)
@@ -153,6 +153,10 @@ void GuiScreen::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 		// available, or automatically falls back to the authentic procedural vector crosshair.
 		legacyDrawSelectionCursorCentered(mc, mouseX, mouseY, PLATFORM_CURSOR_SIZE, zLevel + 100.0f);
 	}
+#endif
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
+	if (VirtualKeyboard::instance().isActive())
+		VirtualKeyboard::instance().render(mc->fontRenderer, width, height);
 #endif
 }
 
@@ -286,7 +290,7 @@ void GuiScreen::handleInput()
 		if (mc->currentScreen != this && mc->getPlayerScreen(0) != this && mc->getPlayerScreen(1) != this)
 			return;
 	}
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (mc != nullptr && mc->isSplitScreenActive() && (this == mc->getPlayerScreen(0) || this == mc->getPlayerScreen(1)))
 	{
 		handleSplitscreenPlayerInput();
@@ -300,7 +304,7 @@ void GuiScreen::handleInput()
 	VirtualKeyboard::instance().tick();
 	if (!platformTextInputExclusive())
 		ContainerSlotNavigator::instance(getOwnerPlayerIndex()).tick();
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	handleConsoleJavaUiNavigation();
 #endif
 #endif
@@ -320,7 +324,7 @@ void GuiScreen::handleMouseInput()
 
 	if (lwjgl::Mouse::getEventDX() != 0 || lwjgl::Mouse::getEventDY() != 0)
 		clearKeyboardSelectionFromPointer();
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
 	if (lwjgl::Mouse::getEventButtonState())
 		clearKeyboardSelectionFromPointer();
 #endif
@@ -369,7 +373,7 @@ bool GuiScreen::isJavaUiKeyboardNavigationEnabled() const
 		return false;
 	if (platformPadRebindExclusive() || platformContainerNavigationActive())
 		return false;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (platformTextInputExclusive())
 		return false;
 #endif
@@ -510,7 +514,7 @@ bool GuiScreen::handleJavaUiNavigationKey(int_t key)
 
 void GuiScreen::moveMenuCursorToKeyboardSelection()
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	if (mc == nullptr || keyboardSelectedControlIndex < 0 ||
 		keyboardSelectedControlIndex >= static_cast<int_t>(controlList.size()) || width <= 0 || height <= 0)
 		return;
@@ -538,14 +542,13 @@ void GuiScreen::clearKeyboardSelectionFromPointer()
 	}
 }
 
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 void GuiScreen::handleConsoleJavaUiNavigation()
 {
 	if (!isJavaUiKeyboardNavigationEnabled())
 		return;
 
-	const bool suppressPointerInput = mc != nullptr && mc->currentScreen != nullptr &&
-		mc->currentScreen->suppressesPlatformPointerInput();
+	const bool suppressPointerInput = menuPointerInputSuppressed(mc, this);
 
 #if PLATFORM_WII
 	if (!suppressPointerInput && platformMenuPointerActive())

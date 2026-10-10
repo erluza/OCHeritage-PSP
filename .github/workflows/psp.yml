@@ -1,0 +1,80 @@
+name: PlayStation Portable (PSP) Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-psp:
+    name: Build PSP EBOOT.PBP
+    runs-on: ubuntu-latest
+    container:
+      image: pspdev/pspdev:latest
+    env:
+      PSPDEV: /usr/local/pspdev
+      PATH: /usr/local/pspdev/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_COMPRESS: "true"
+      CCACHE_COMPRESSLEVEL: "6"
+      CCACHE_MAXSIZE: "500M"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup build accelerators (ccache & ninja)
+        run: |
+          which ccache >/dev/null 2>&1 || (apt-get update && apt-get install -y ccache) || true
+          which ninja >/dev/null 2>&1 || (apt-get update && apt-get install -y ninja-build) || true
+
+      - name: Restore compiler cache (ccache)
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: psp-ccache-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            psp-ccache-${{ runner.os }}-
+
+      - name: Verify toolchain and environment
+        run: |
+          echo "PSPDEV is $PSPDEV"
+          psp-gcc --version
+          cmake --version || true
+          ninja --version || true
+          ccache --version || true
+
+      - name: Build PSP Port
+        run: |
+          bash ./build_psp.sh
+
+      - name: Show cache statistics
+        run: |
+          ccache -s || true
+
+      - name: Package PSP files
+        run: |
+          mkdir -p release/OptiCraft
+          cp -f EBOOT.PBP release/OptiCraft/
+          if [ -f assets.pak ]; then
+            cp -f assets.pak release/OptiCraft/
+          fi
+          ls -lh release/OptiCraft/
+
+      - name: Upload PSP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OptiCraft-PSP
+          path: release/
+          if-no-files-found: error

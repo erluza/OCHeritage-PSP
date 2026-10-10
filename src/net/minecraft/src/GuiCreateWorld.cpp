@@ -15,6 +15,7 @@
 #include "java/Random.h"
 #include "java/String.h"
 #include "pc/lwjgl/Keyboard.h"
+#include "platform/PlatformConfig.h"
 #include <algorithm>
 
 GuiCreateWorld::GuiCreateWorld(GuiScreen *parent)
@@ -31,8 +32,20 @@ GuiCreateWorld::GuiCreateWorld(GuiScreen *parent)
     , generateStructuresButton(nullptr)
     , worldTypeButton(nullptr)
     , worldSizeButton(nullptr)
-    , limitedWorld(false)
-    , worldSizeType(0)
+    , limitedWorld(
+#if PLATFORM_PSP
+        true
+#else
+        false
+#endif
+    )
+    , worldSizeType(
+#if PLATFORM_PSP
+        1
+#else
+        0
+#endif
+    )
     , seed("")
     , localizedNewWorldText(StatCollector::translateToLocal("selectWorld.newWorld"))
     , worldTypeIndex(0)
@@ -239,9 +252,11 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
     }
     else if (button->id == 7)
     {
+#if !PLATFORM_PSP
         worldSizeType = (worldSizeType + 1) % 3;
         limitedWorld = (worldSizeType != 0);
         updateButtonText();
+#endif
     }
     else if (button->id == 2)
     {
@@ -269,6 +284,7 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
     }
     else if (button->id == 5)
     {
+#if !PLATFORM_PSP
         do
         {
             ++worldTypeIndex;
@@ -278,6 +294,7 @@ void GuiCreateWorld::actionPerformed(GuiButton *button)
         while (WorldType::worldTypes[worldTypeIndex] == nullptr ||
                !WorldType::worldTypes[worldTypeIndex]->getCanBeCreated());
         updateButtonText();
+#endif
     }
 }
 

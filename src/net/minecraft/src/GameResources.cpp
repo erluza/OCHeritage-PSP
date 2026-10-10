@@ -44,7 +44,7 @@ std::unique_ptr<std::istream> open(const std::string& mcPath)
     }
 
     std::string resolved = resolve(mcPath);
-#ifdef PS2_PLATFORM
+#if defined(PS2_PLATFORM) || defined(PLATFORM_PSP)
     if (resolved.empty())
     {
         std::string fallback = mcPath;

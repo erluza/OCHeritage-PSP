@@ -480,7 +480,7 @@ public:
 	int_t countedWaterCreatures = 0;
 
 private:
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
 	mutable std::unordered_set<const Entity *> loadedEntityPointerSet;
 #elif PLATFORM_PS2
 	mutable Ps2EntityPointerIndex loadedEntityPointerIndex;

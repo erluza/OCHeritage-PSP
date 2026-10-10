@@ -130,6 +130,14 @@ void clearDeltas()
 	detail::s_stagingDW = 0;
 }
 
+void clearEvents()
+{
+	while (!detail::s_queue.empty())
+		detail::s_queue.pop();
+	detail::s_current = {};
+	clearDeltas();
+}
+
 bool isButtonDown(int_t button)
 {
 	if (button < 0 || button > 2) return false;

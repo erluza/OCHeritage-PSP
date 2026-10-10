@@ -3,7 +3,7 @@
 
 bool legacyUiDefaultEnabled()
 {
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PLATFORM_PSP)
     return true;
 #else
     return false;

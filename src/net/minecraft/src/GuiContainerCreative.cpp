@@ -375,7 +375,7 @@ void GuiContainerCreative::handleMouseInput()
 
 Slot *GuiContainerCreative::getControllerNavigationTarget(Slot *selected, int_t dirX, int_t dirY)
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     if (selected == nullptr || inventorySlots == nullptr)
         return nullptr;
 

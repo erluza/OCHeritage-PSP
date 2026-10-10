@@ -179,6 +179,14 @@ void clearDeltas()
 	SDL_GetRelativeMouseState(&dx, &dy);
 }
 
+void clearEvents()
+{
+	while (!event_queue.empty())
+		event_queue.pop();
+	current_event = {};
+	clearDeltas();
+}
+
 bool isButtonDown(int_t button)
 {
 	Uint8 sdlButton = buttonLWJGLToSDL(button);

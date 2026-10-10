@@ -123,6 +123,10 @@
 #include "net/minecraft/src/Tessellator.h"
 #include "net/minecraft/src/legacy/startup/StartupPresentation.h"
 #include "net/minecraft/src/legacy/LegacyDebugOptions.h"
+#include "net/minecraft/src/skin/SkinManager.h"
+#if PLATFORM_PSP
+#include "psp/input/PspPadState.h"
+#endif
 
 namespace
 {
@@ -608,7 +612,7 @@ void Minecraft::startGame()
     fontRenderer = new FontRenderer(gameSettings, "/font/default.png", renderEngine);
     fontRenderer->setUnicodeFlag(StringTranslate::getInstance()->isUnicode());
     fontRenderer->setBidiFlag(StringTranslate::isBidirectional(gameSettings->language));
-#if !PLATFORM_PS2
+#if !PLATFORM_PS2 && !PLATFORM_PSP
     standardGalacticFontRenderer = new FontRenderer(gameSettings, "/font/alternate.png", renderEngine);
 #endif
     PLATFORM_BOOT_LOG(PLATFORM_BOOT_PREFIX " FontRenderer ready\n");
@@ -1314,6 +1318,11 @@ void Minecraft::displayGuiScreen(GuiScreen *guiscreen)
             ownedGuiScreens.push_back(guiscreen);
 
         setIngameNotInFocus();
+        lwjgl::Mouse::clearEvents();
+        lwjgl::Keyboard::clearEvents();
+#if PLATFORM_PSP
+        PspPadState::clearLatches();
+#endif
         ScaledResolution scaledresolution(gameSettings, displayWidth, displayHeight);
         int_t i = scaledresolution.getScaledWidth();
         int_t j = scaledresolution.getScaledHeight();
@@ -2359,73 +2368,7 @@ void Minecraft::usePortal(int_t targetDimension)
     if (thePlayer == nullptr || theWorld == nullptr)
         return;
 
-    const int_t previousDimension = thePlayer->dimension;
-    WorldProvider *destinationProvider = WorldProvider::getProviderForDimension(targetDimension);
-    if (destinationProvider == nullptr)
-        return;
-
-    MC_LOG_DEBUG("world", "Changing dimension %d -> %d\n",
-                 (int)previousDimension, (int)targetDimension);
-
-    thePlayer->dimension = targetDimension;
-    theWorld->setEntityDead(thePlayer);
-    thePlayer->isDead = false;
-
-    double targetX = thePlayer->posX;
-    double targetZ = thePlayer->posZ;
-    double coordinateScale = 1.0;
-    if (previousDimension > -1 && targetDimension == -1)
-        coordinateScale = 0.125;
-    else if (previousDimension == -1 && targetDimension > -1)
-        coordinateScale = 8.0;
-
-    targetX *= coordinateScale;
-    targetZ *= coordinateScale;
-
-    World *oldWorld = theWorld;
-    World *destinationWorld = nullptr;
-    std::string transitionMessage;
-
-    if (targetDimension == -1)
-    {
-        thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ,
-                                        thePlayer->rotationYaw, thePlayer->rotationPitch);
-        if (thePlayer->isEntityAlive())
-            oldWorld->updateEntityWithOptionalForce(thePlayer, false);
-
-        destinationWorld = new World(oldWorld, destinationProvider);
-        transitionMessage = "Entering the Nether";
-    }
-    else if (targetDimension == 0)
-    {
-        if (thePlayer->isEntityAlive())
-        {
-            thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ,
-                                            thePlayer->rotationYaw, thePlayer->rotationPitch);
-            oldWorld->updateEntityWithOptionalForce(thePlayer, false);
-        }
-
-        destinationWorld = new World(oldWorld, destinationProvider);
-        transitionMessage = previousDimension == -1 ? "Leaving the Nether" : "Leaving the End";
-    }
-    else
-    {
-        destinationWorld = new World(oldWorld, destinationProvider);
-        std::unique_ptr<ChunkCoordinates> entrance(destinationWorld->getEntrancePortalLocation());
-        if (entrance != nullptr)
-        {
-            targetX = (double)entrance->x;
-            thePlayer->posY = (double)entrance->y;
-            targetZ = (double)entrance->z;
-        }
-
-        thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ, 90.0f, 0.0f);
-        if (thePlayer->isEntityAlive())
-            destinationWorld->updateEntityWithOptionalForce(thePlayer, false);
-        transitionMessage = "Entering the End";
-    }
-
-#if PLATFORM_RELEASE_OLD_WORLD_BEFORE_PORTAL
+    // Close any active player containers/screens to prevent input or lifecycle leaks
     for (int pIdx = 0; pIdx < 2; ++pIdx)
     {
         if (playerScreens[pIdx] != nullptr)
@@ -2435,39 +2378,154 @@ void Minecraft::usePortal(int_t targetDimension)
             playerScreens[pIdx] = nullptr;
         }
     }
-    if (thePlayer2 != nullptr)
+    if (currentScreen != nullptr)
+        displayGuiScreen(nullptr);
+    screenOwnedByPlayer2 = false;
+
+    const int_t previousDimension = thePlayer->dimension;
+    WorldProvider *destinationProvider = WorldProvider::getProviderForDimension(targetDimension);
+    if (destinationProvider == nullptr)
+        return;
+
+    MC_LOG_DEBUG("world", "Changing dimension %d -> %d\n",
+                 (int)previousDimension, (int)targetDimension);
+
+    World *oldWorld = theWorld;
+    World *destinationWorld = new World(oldWorld, destinationProvider);
+
+    // CRITICAL: Clear playerTag so destinationWorld does NOT restore stale player position/dimension
+    if (destinationWorld->getWorldInfo() != nullptr)
     {
-        if (oldWorld != nullptr && oldWorld->getWorldInfo() != nullptr)
+        destinationWorld->getWorldInfo()->setPlayerNBTTagCompound(nullptr);
+    }
+
+    double targetX = thePlayer->posX;
+    double targetY = thePlayer->posY;
+    double targetZ = thePlayer->posZ;
+    float targetYaw = thePlayer->rotationYaw;
+    float targetPitch = thePlayer->rotationPitch;
+    std::string transitionMessage;
+
+    if (targetDimension == -1)
+    {
+        double coordinateScale = 0.125;
+        targetX *= coordinateScale;
+        targetZ *= coordinateScale;
+        transitionMessage = "Entering the Nether";
+    }
+    else if (targetDimension == 0)
+    {
+        if (previousDimension == -1)
         {
-            NBTTagCompound *p2Tag = new NBTTagCompound();
-            thePlayer2->writeToNBT(p2Tag);
-            oldWorld->getWorldInfo()->setPlayer2NBTTagCompound(p2Tag);
+            targetX *= 8.0;
+            targetZ *= 8.0;
+            transitionMessage = "Leaving the Nether";
         }
-        oldWorld->detachEntityForWorldChange(thePlayer2);
+        else
+        {
+            ChunkCoordinates spawn = destinationWorld->getSpawnPoint();
+            targetX = (double)spawn.x + 0.5;
+            targetY = (double)spawn.y;
+            targetZ = (double)spawn.z + 0.5;
+            transitionMessage = "Leaving the End";
+        }
     }
-    oldWorld->detachEntityForWorldChange(thePlayer);
-    oldWorld->saveWorldIndirectly(loadingScreen);
-    renderViewEntity = nullptr;
-    if (renderGlobal != nullptr)
-        renderGlobal->changeWorld(nullptr);
-    if (effectRenderer != nullptr)
-        effectRenderer->clearEffects(nullptr);
-    theWorld = nullptr;
-    platformMemoryCheckpoint("portal old world pre-delete");
-    delete oldWorld;
-    platformMemoryCheckpoint("portal old world deleted");
-#endif
-
-    changeWorld(destinationWorld, transitionMessage, thePlayer);
-    thePlayer->worldObj = theWorld;
-
-    if (thePlayer->isEntityAlive() && previousDimension < 1)
+    else // targetDimension == 1 (The End)
     {
-        thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ,
-                                        thePlayer->rotationYaw, thePlayer->rotationPitch);
-        theWorld->updateEntityWithOptionalForce(thePlayer, false);
-        Teleporter().placeInPortal(theWorld, thePlayer);
+        std::unique_ptr<ChunkCoordinates> entrance(destinationWorld->getEntrancePortalLocation());
+        if (entrance != nullptr)
+        {
+            targetX = (double)entrance->x + 0.5;
+            targetY = (double)entrance->y;
+            targetZ = (double)entrance->z + 0.5;
+        }
+        else
+        {
+            targetX = 100.5;
+            targetY = 50.0;
+            targetZ = 0.5;
+        }
+        targetYaw = 90.0f;
+        targetPitch = 0.0f;
+        transitionMessage = "Entering the End";
     }
+
+    // Follow the Overworld / respawn pattern:
+    // Create a fresh Player 1 entity bound to destinationWorld, and copy state from oldPlayer.
+    EntityPlayerSP *oldPlayer = thePlayerOne ? thePlayerOne : thePlayer;
+    int_t oldEntityId = oldPlayer ? oldPlayer->entityId : 0;
+
+    renderViewEntity = nullptr;
+    EntityPlayerSP *newPlayer = (EntityPlayerSP *)playerController->createPlayer(destinationWorld);
+    if (oldPlayer != nullptr)
+    {
+        newPlayer->copyPlayer(oldPlayer);
+        newPlayer->capabilities = oldPlayer->capabilities;
+    }
+    newPlayer->dimension = targetDimension;
+    newPlayer->entityId = oldEntityId;
+    newPlayer->setLocationAndAngles(targetX, targetY, targetZ, targetYaw, targetPitch);
+    newPlayer->prevPosX = newPlayer->lastTickPosX = newPlayer->posX;
+    newPlayer->prevPosY = newPlayer->lastTickPosY = newPlayer->posY;
+    newPlayer->prevPosZ = newPlayer->lastTickPosZ = newPlayer->posZ;
+    newPlayer->prevRotationYaw = newPlayer->rotationYaw;
+    newPlayer->prevRotationPitch = newPlayer->rotationPitch;
+    newPlayer->motionX = newPlayer->motionY = newPlayer->motionZ = 0.0;
+    newPlayer->fallDistance = 0.0f;
+
+    const std::string activeSkin = SkinManager::getActiveSkinTexture();
+    if (!activeSkin.empty())
+    {
+        newPlayer->setEntityTexture(activeSkin);
+        newPlayer->skinUrl = "";
+    }
+
+    thePlayer = newPlayer;
+    thePlayerOne = newPlayer;
+    renderViewEntity = newPlayer;
+
+    if (oldWorld != nullptr && oldPlayer != nullptr)
+    {
+        oldWorld->detachEntityForWorldChange(oldPlayer);
+        oldWorld->setEntityDead(oldPlayer);
+    }
+    if (oldPlayer != nullptr && oldPlayer != newPlayer)
+    {
+        delete oldPlayer;
+    }
+
+    changeWorld(destinationWorld, transitionMessage, newPlayer);
+
+    if (thePlayer->isEntityAlive())
+    {
+        if (targetDimension == 1)
+        {
+            Teleporter().placeInPortal(theWorld, thePlayer);
+        }
+        else if (previousDimension < 1)
+        {
+            thePlayer->setLocationAndAngles(targetX, thePlayer->posY, targetZ,
+                                            thePlayer->rotationYaw, thePlayer->rotationPitch);
+            theWorld->updateEntityWithOptionalForce(thePlayer, false);
+            Teleporter().placeInPortal(theWorld, thePlayer);
+        }
+
+        thePlayer->prevPosX = thePlayer->lastTickPosX = thePlayer->posX;
+        thePlayer->prevPosY = thePlayer->lastTickPosY = thePlayer->posY;
+        thePlayer->prevPosZ = thePlayer->lastTickPosZ = thePlayer->posZ;
+        thePlayer->prevRotationYaw = thePlayer->rotationYaw;
+        thePlayer->prevRotationPitch = thePlayer->rotationPitch;
+        thePlayer->prevRenderArmPitch = thePlayer->renderArmPitch = 0.0f;
+        thePlayer->prevRenderArmYaw = thePlayer->renderArmYaw = 0.0f;
+        thePlayer->timeInPortal = 0.0f;
+        thePlayer->prevTimeInPortal = 0.0f;
+        thePlayer->timeUntilPortal = 100;
+        thePlayer->motionX = thePlayer->motionY = thePlayer->motionZ = 0.0;
+        thePlayer->fallDistance = 0.0f;
+    }
+
+    thePlayerOne = thePlayer;
+    renderViewEntity = thePlayer;
 }
 
 void Minecraft::changeWorld1(World *world)
@@ -2602,6 +2660,9 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
 
         platformMemoryCheckpoint("changeWorld pre-spawnChunks");
         world->spawnPlayerWithLoadedChunks(thePlayer);
+        thePlayer->preparePlayerToSpawn();
+        if (world->isNewWorld)
+            playerController->flipPlayer(thePlayer);
         platformMemoryCheckpoint("changeWorld post-spawnChunks");
         if (world->isNewWorld)
         {
@@ -2652,6 +2713,18 @@ void Minecraft::changeWorld(World *world, const std::string &s, EntityPlayerSP *
     platformMemoryCheckpoint("changeWorld renderGlobal ready");
     if (effectRenderer != nullptr)
         effectRenderer->clearEffects(world);
+
+    if (world != nullptr && thePlayer != nullptr)
+    {
+        const std::string activeSkin = SkinManager::getActiveSkinTexture();
+        if (!activeSkin.empty())
+        {
+            thePlayer->setEntityTexture(activeSkin);
+            thePlayer->skinUrl = "";
+        }
+        if (renderGlobal != nullptr)
+            renderGlobal->obtainEntitySkin(thePlayer);
+    }
 
 #if PLATFORM_LOAD_TERRAIN_WARMUP_MS > 0 || PLATFORM_LOAD_TERRAIN_MIN_MS > 0
     // RenderGlobal has just queued every section in the new renderer grid.
@@ -2829,6 +2902,8 @@ void Minecraft::respawn(bool flag, int_t i, bool copyPlayerState)
 
     playerController->flipPlayer(thePlayer);
     theWorld->spawnPlayerWithLoadedChunks(thePlayer);
+    thePlayer->preparePlayerToSpawn();
+    playerController->flipPlayer(thePlayer);
     thePlayer->movementInput = new MovementInputFromOptions(gameSettings);
     thePlayer->entityId      = j;
     thePlayer->handleItemUseFinish();
@@ -3071,6 +3146,7 @@ NetClientHandler *Minecraft::getSendQueue()
     return nullptr;
 }
 
+#if !PLATFORM_PSP
 bool Minecraft::isScreenOwnedByPlayer2() const
 {
 #if PLATFORM_PS2
@@ -3098,3 +3174,5 @@ void Minecraft::setSplitScreenActive(bool val)
 {
     splitScreenActive = val;
 }
+#endif
+

@@ -25,7 +25,7 @@
 #include "pc/lwjgl/Mouse.h"
 #include <algorithm>
 
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || PLATFORM_PSP
 #include "ContainerSlotNavigator.h"
 #include "platform/Input.h"
 #endif
@@ -296,7 +296,6 @@ void GuiContainer::drawScreen(int_t mouseX, int_t mouseY, float_t partialTick)
 	renderPopMatrix();
 	GuiScreen::drawScreen(mouseX, mouseY, partialTick);
 	ModManager::getInstance().onDrawContainer(this, mouseX, mouseY);
-
 	renderEnable(RenderCapability::Lighting);
 	renderEnable(RenderCapability::DepthTest);
 }
@@ -354,7 +353,7 @@ bool GuiContainer::getIsMouseOverSlot(Slot *slot, int_t mouseX, int_t mouseY)
 
 void GuiContainer::mouseClicked(int_t x, int_t y, int_t button)
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	ContainerSlotNavigator &navigator = ContainerSlotNavigator::instance(getOwnerPlayerIndex());
 	const bool pointerActive = platformMenuPointerActive();
 	// Console confirm buttons are exposed both as controller input and mouse
@@ -376,7 +375,7 @@ void GuiContainer::mouseClicked(int_t x, int_t y, int_t button)
 	if (button == 0 || button == 1)
 	{
 		Slot *slot = nullptr;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 		if (controllerSlot != nullptr)
 			slot = controllerSlot;
 #endif
@@ -408,7 +407,7 @@ void GuiContainer::handleMouseClick(Slot *slot, int_t slotId, int_t button, bool
 
 void GuiContainer::mouseMovedOrUp(int_t x, int_t y, int_t button)
 {
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	// Button release is not pointer motion. Only actual movement should take
 	// authority away from the controller-selected slot. Wheel and click events
 	// have dx=0 and dy=0 and must not clear the controller slot selection.

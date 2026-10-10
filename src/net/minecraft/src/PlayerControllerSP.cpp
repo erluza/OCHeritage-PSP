@@ -28,9 +28,9 @@ PlayerControllerSP::PlayerControllerSP(Minecraft *minecraft)
 void PlayerControllerSP::flipPlayer(EntityPlayer *entityplayer)
 {
 	entityplayer->rotationYaw = -180.0f;
-#ifdef PS2_PLATFORM
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 	// orientCamera() interpolates prevRotationYaw -> rotationYaw every render.
-	// PC normally hides this one-frame 0 -> -180 transition, but a PS2 world
+	// PC normally hides this one-frame 0 -> -180 transition, but a PS2/PSP world
 	// frame can take a second and turns it into an apparent 180/360 spin at
 	// spawn. Keep both endpoints of the interpolation at the spawn yaw.
 	entityplayer->prevRotationYaw = entityplayer->rotationYaw;

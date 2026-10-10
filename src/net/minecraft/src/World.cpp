@@ -52,6 +52,7 @@
 #include "ISaveHandler.h"
 #include "ChunkProvider.h"
 #include "EntityPlayer.h"
+#include "InventoryPlayer.h"
 #include "ChunkProviderLoadOrGenerate.h"
 #include "MathHelper.h"
 #include "IChunkProvider.h"
@@ -651,6 +652,7 @@ void World::generateSpawnPoint()
     Random spawnRandom(getSeed());
     WorldLoadTrace::step("findBiomePosition");
 
+
     int_t worldSizeType = (worldInfo != nullptr) ? worldInfo->getWorldSizeType() : 0;
     int_t searchRadius = 64;
     int_t maxOffset = 48;
@@ -861,7 +863,21 @@ void World::spawnPlayerWithLoadedChunks(EntityPlayer* entityPlayer)
         NBTTagCompound* nbt = worldInfo->getPlayerNBTTagCompound();
         if (nbt != nullptr)
         {
-            entityPlayer->readFromNBT(nbt);
+            if (worldProvider != nullptr && nbt->hasKey("Dimension") && nbt->getInteger("Dimension") != worldProvider->worldType)
+            {
+                NBTTagList *nbttaglist = nbt->getTagList("Inventory");
+                if (nbttaglist != nullptr && entityPlayer->inventory != nullptr)
+                    entityPlayer->inventory->readFromNBT(nbttaglist);
+                if (nbt->hasKey("XpP")) entityPlayer->experience = nbt->getFloat("XpP");
+                if (nbt->hasKey("XpLevel")) entityPlayer->experienceLevel = nbt->getInteger("XpLevel");
+                if (nbt->hasKey("XpTotal")) entityPlayer->experienceTotal = nbt->getInteger("XpTotal");
+                entityPlayer->foodStats.readNBT(nbt);
+                entityPlayer->capabilities.readCapabilitiesFromNBT(nbt);
+            }
+            else
+            {
+                entityPlayer->readFromNBT(nbt);
+            }
             worldInfo->setPlayerNBTTagCompound(nullptr);
         }
         
@@ -3269,7 +3285,7 @@ static int_t s_pathfindBudgetThisTick = 0;
 
 void World::trackLoadedEntityPointer(Entity *entity)
 {
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
     if (entity != nullptr)
         loadedEntityPointerSet.insert(entity);
 #elif PLATFORM_PS2
@@ -3282,7 +3298,7 @@ void World::trackLoadedEntityPointer(Entity *entity)
 
 void World::untrackLoadedEntityPointer(Entity *entity)
 {
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
     if (entity != nullptr)
         loadedEntityPointerSet.erase(entity);
 #elif PLATFORM_PS2
@@ -3295,7 +3311,7 @@ void World::untrackLoadedEntityPointer(Entity *entity)
 
 void World::rebuildLoadedEntityPointerSet() const
 {
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
     loadedEntityPointerSet.clear();
     loadedEntityPointerSet.insert(loadedEntityList.begin(), loadedEntityList.end());
 #elif PLATFORM_PS2
@@ -3316,7 +3332,7 @@ bool World::isLoadedEntityPointer(const Entity *entity) const
 {
     if (entity == nullptr)
         return false;
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
     if (loadedEntityPointerSet.size() != loadedEntityList.size())
         rebuildLoadedEntityPointerSet();
     return loadedEntityPointerSet.find(entity) != loadedEntityPointerSet.end();
@@ -3398,7 +3414,7 @@ void World::updateEntities()
     {
         for (Entity *entity : unloadedEntityList)
             untrackLoadedEntityPointer(entity);
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
         loadedEntityList.erase(
             std::remove_if(loadedEntityList.begin(), loadedEntityList.end(),
                 [this](Entity* entity)

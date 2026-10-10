@@ -29,6 +29,7 @@
 #include "Vec3D.h"
 #include "World.h"
 #include "WorldInfo.h"
+#include "WorldProvider.h"
 #include "Chunk.h"
 
 int_t Entity::nextEntityID = 0;
@@ -343,6 +344,14 @@ void Entity::preparePlayerToSpawn()
 	{
 		return;
 	}
+	if (worldObj->isLimitedWorld() && worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
+	{
+		constexpr double SAFE_BOUND = 100.0;
+		if (posX < -SAFE_BOUND) posX = -SAFE_BOUND;
+		else if (posX > SAFE_BOUND) posX = SAFE_BOUND;
+		if (posZ < -SAFE_BOUND) posZ = -SAFE_BOUND;
+		else if (posZ > SAFE_BOUND) posZ = SAFE_BOUND;
+	}
 	do
 	{
 		if (posY <= 0.0)
@@ -358,11 +367,11 @@ void Entity::preparePlayerToSpawn()
 	} while (true);
 	motionX = motionY = motionZ = 0.0;
 	rotationPitch = 0.0f;
-#ifdef PS2_PLATFORM
+#if defined(PS2_PLATFORM) || defined(PSP_PLATFORM) || PLATFORM_PSP
 	// The spawn collision resolver above can move posY through several blocks
 	// using setPosition(), which deliberately does not update interpolation
 	// history. At desktop frame rates the stale prev/last position is barely
-	// visible; on the PS2 it can persist for an entire slow world frame and
+	// visible; on the PS2/PSP it can persist for an entire slow world frame and
 	// looks like the player is spawned in one place then falls/teleports.
 	prevPosX = lastTickPosX = posX;
 	prevPosY = lastTickPosY = posY;
@@ -585,7 +594,8 @@ void Entity::moveEntity(double d, double d1, double d2)
 		posX = (boundingBox->minX + boundingBox->maxX) / 2.0;
 		posY = (boundingBox->minY + (double)yOffset) - (double)ySize;
 		posZ = (boundingBox->minZ + boundingBox->maxZ) / 2.0;
-		if (worldObj != nullptr && worldObj->isLimitedWorld())
+		if (worldObj != nullptr && worldObj->isLimitedWorld() &&
+		    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
 		{
 			const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
 			double clampedX = posX;
@@ -616,50 +626,49 @@ void Entity::moveEntity(double d, double d1, double d2)
 		motionY = 0.0;
 		motionZ = 0.0;
 	}
+	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
+	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
+	{
+		const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
+		if (posX >= boundary && d > 0.0)
+		{
+			d = 0.0;
+			motionX = 0.0;
+		}
+		else if (posX <= -boundary && d < 0.0)
+		{
+			d = 0.0;
+			motionX = 0.0;
+		}
+		if (posZ >= boundary && d2 > 0.0)
+		{
+			d2 = 0.0;
+			motionZ = 0.0;
+		}
+		else if (posZ <= -boundary && d2 < 0.0)
+		{
+			d2 = 0.0;
+			motionZ = 0.0;
+		}
+	}
 	double d5 = d;
 	double d6 = d1;
 	double d7 = d2;
 
-	// Void drop protection for streaming / async chunk generation:
-	// If the chunk beneath the player is ungenerated or blank, freeze vertical drop.
-	// If the player is about to cross into an ungenerated chunk, prevent entry until loaded.
+	// Void drop protection for ungenerated chunks:
+	// If the chunk beneath the player is ungenerated or blank, freeze vertical drop only.
 	if (isPlayer() && worldObj != nullptr && !worldObj->findingSpawnPoint)
 	{
 		const int_t curChunkX = MathHelper::floor_double(posX) >> 4;
 		const int_t curChunkZ = MathHelper::floor_double(posZ) >> 4;
 		Chunk *curChunk = worldObj->getChunkIfExists(curChunkX, curChunkZ);
-		const bool curChunkEmpty = (curChunk == nullptr || curChunk->isEmptyChunk());
-
-		if (curChunkEmpty)
+		if (curChunk == nullptr || curChunk->isEmptyChunk())
 		{
 			if (d1 < 0.0)
 			{
 				d1 = 0.0;
 				d6 = 0.0;
 				motionY = 0.0;
-			}
-		}
-		else
-		{
-			const int_t nextChunkX = MathHelper::floor_double(posX + d) >> 4;
-			const int_t nextChunkZ = MathHelper::floor_double(posZ + d2) >> 4;
-			if (nextChunkX != curChunkX || nextChunkZ != curChunkZ)
-			{
-				Chunk *targetChunk = worldObj->getChunkIfExists(nextChunkX, nextChunkZ);
-				Chunk *targetChunkX = (nextChunkX != curChunkX) ? worldObj->getChunkIfExists(nextChunkX, curChunkZ) : targetChunk;
-				Chunk *targetChunkZ = (nextChunkZ != curChunkZ) ? worldObj->getChunkIfExists(curChunkX, nextChunkZ) : targetChunk;
-				if ((targetChunk == nullptr || targetChunk->isEmptyChunk()) ||
-				    (targetChunkX == nullptr || targetChunkX->isEmptyChunk()) ||
-				    (targetChunkZ == nullptr || targetChunkZ->isEmptyChunk()))
-				{
-					d = 0.0;
-					d2 = 0.0;
-					d5 = 0.0;
-					d7 = 0.0;
-					motionX = 0.0;
-					motionZ = 0.0;
-					isCollidedHorizontally = true;
-				}
 			}
 		}
 	}
@@ -853,15 +862,32 @@ void Entity::moveEntity(double d, double d1, double d2)
 	posX = (boundingBox->minX + boundingBox->maxX) / 2.0;
 	posY = (boundingBox->minY + (double)yOffset) - (double)ySize;
 	posZ = (boundingBox->minZ + boundingBox->maxZ) / 2.0;
-	if (worldObj != nullptr && worldObj->isLimitedWorld())
+	if (worldObj != nullptr && worldObj->isLimitedWorld() &&
+	    worldObj->worldProvider != nullptr && worldObj->worldProvider->worldType == 0)
 	{
 		const double boundary = worldObj->getWorldInfo() != nullptr ? worldObj->getWorldInfo()->getLimitedWorldBoundary() : 127.5;
 		double clampedX = posX;
 		double clampedZ = posZ;
-		if (clampedX < -boundary) { clampedX = -boundary; motionX = 0.0; isCollidedHorizontally = true; }
-		else if (clampedX > boundary) { clampedX = boundary; motionX = 0.0; isCollidedHorizontally = true; }
-		if (clampedZ < -boundary) { clampedZ = -boundary; motionZ = 0.0; isCollidedHorizontally = true; }
-		else if (clampedZ > boundary) { clampedZ = boundary; motionZ = 0.0; isCollidedHorizontally = true; }
+		if (clampedX < -boundary)
+		{
+			clampedX = -boundary;
+			if (motionX < 0.0) motionX = 0.0;
+		}
+		else if (clampedX > boundary)
+		{
+			clampedX = boundary;
+			if (motionX > 0.0) motionX = 0.0;
+		}
+		if (clampedZ < -boundary)
+		{
+			clampedZ = -boundary;
+			if (motionZ < 0.0) motionZ = 0.0;
+		}
+		else if (clampedZ > boundary)
+		{
+			clampedZ = boundary;
+			if (motionZ > 0.0) motionZ = 0.0;
+		}
 		if (clampedX != posX || clampedZ != posZ)
 		{
 			boundingBox->offset(clampedX - posX, 0.0, clampedZ - posZ);

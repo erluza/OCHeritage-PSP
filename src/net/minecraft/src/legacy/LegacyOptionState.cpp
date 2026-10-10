@@ -53,5 +53,5 @@ std::string legacyFovLabel(float_t normalizedFov)
 std::string legacySensitivityLabel(float_t normalizedSensitivity)
 {
     const float_t value = std::max<float_t>(0.0f, std::min<float_t>(1.0f, normalizedSensitivity));
-    return uiText("Sensitivity: ") + std::to_string(static_cast<int_t>(value * 200.0f)) + "%";
+    return uiText("Camera Sensitivity: ") + std::to_string(static_cast<int_t>(value * 200.0f)) + "%";
 }

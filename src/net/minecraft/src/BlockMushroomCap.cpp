@@ -35,7 +35,7 @@ int_t BlockMushroomCap::getBlockTextureFromSideAndMetadata(int_t side, int_t met
 
 int_t BlockMushroomCap::quantityDropped(Random &random)
 {
-    return std::max(0, random.nextInt(10) - 7);
+    return std::max<int_t>(0, random.nextInt(10) - 7);
 }
 
 int_t BlockMushroomCap::idDropped(int_t metadata, Random &random)

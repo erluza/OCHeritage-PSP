@@ -8,6 +8,8 @@
 #include "Minecraft.h"
 #include "platform/Input.h"
 #include "platform/PlatformConfig.h"
+#include "GuiSlider.h"
+#include "EnumOptions.h"
 #include "wii/input/GuiWiiControls.h"
 
 GuiControls::GuiControls(GuiScreen *parent, GameSettings *settings)
@@ -43,6 +45,9 @@ void GuiControls::initGui()
 			70, 20, options->getOptionDisplayString(j)));
 	}
 	int_t nextY = height / 6 + 24 * (((int_t)displayedBindings.size() + 1) / 2);
+	controlList.push_back(new GuiSlider(EnumOptions::SENSITIVITY->returnEnumOrdinal(), width / 2 - 100, nextY,
+		EnumOptions::SENSITIVITY, options->getKeyBinding(EnumOptions::SENSITIVITY), options->getOptionFloatValue(EnumOptions::SENSITIVITY)));
+	nextY += 24;
 #ifdef WII_PLATFORM
 	controlList.push_back(new GuiButton(201, width / 2 - 100, nextY, uiText("Wii Pad Bindings...")));
 	nextY += 24;

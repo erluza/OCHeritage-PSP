@@ -399,6 +399,8 @@ ninja.exe
 extracted_assets/
 extracted_assets_vanilla/
 *.pak
+EBOOT.PBP
+bin/psp/
 
 # Local commit patch exports
 /patches/

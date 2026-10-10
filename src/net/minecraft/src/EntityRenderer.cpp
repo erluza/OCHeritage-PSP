@@ -345,7 +345,7 @@ EntityRenderer::EntityRenderer(Minecraft* minecraft)
     
     mc = minecraft;
     itemRenderer = new ItemRenderer(minecraft);
-#if !defined(PS2_PLATFORM)
+#if !defined(PS2_PLATFORM) && !PLATFORM_PSP
     BufferedImage lightmapImage(16, 16);
     lightmapTexture = minecraft->renderEngine->allocateAndSetupTexture(&lightmapImage, true);
 #endif
@@ -477,7 +477,7 @@ void EntityRenderer::updateLightmap()
         green = std::min(1.0f, green);
         blue = std::min(1.0f, blue);
 
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
         if (mc->gameSettings != nullptr && mc->gameSettings->legacyLook)
             legacyLookRgb(red, green, blue);
 #endif
@@ -504,7 +504,7 @@ void EntityRenderer::updateLightmap()
     }
     ps2TerrainLightBucket = terrainLightBucket;
     ps2TerrainLightningActive = lightningActive;
-#else
+#elif !PLATFORM_PSP
     if (lightmapTexture >= 0)
         mc->renderEngine->updateTextureSubImage(lightmapColors, 16, 16, lightmapTexture);
 #endif
@@ -521,9 +521,18 @@ void EntityRenderer::updateLightmap()
 
 void EntityRenderer::disableLightmap(double)
 {
+#if defined(PS2_PLATFORM)
     OpenGlHelper::setActiveTexture(OpenGlHelper::lightmapTexUnit);
     renderDisable(RenderCapability::Texture2D);
     OpenGlHelper::setActiveTexture(OpenGlHelper::defaultTexUnit);
+#elif PLATFORM_PSP
+    // PSP has only one texture unit (GL_TEXTURE0). Multitexture lightmap is not used.
+    // Disabling Texture2D here would incorrectly disable main terrain/GUI texturing!
+#else
+    OpenGlHelper::setActiveTexture(OpenGlHelper::lightmapTexUnit);
+    renderDisable(RenderCapability::Texture2D);
+    OpenGlHelper::setActiveTexture(OpenGlHelper::defaultTexUnit);
+#endif
 }
 
 void EntityRenderer::enableLightmap(double)
@@ -532,6 +541,8 @@ void EntityRenderer::enableLightmap(double)
     OpenGlHelper::setActiveTexture(OpenGlHelper::lightmapTexUnit);
     renderEnable(RenderCapability::Texture2D);
     OpenGlHelper::setActiveTexture(OpenGlHelper::defaultTexUnit);
+#elif PLATFORM_PSP
+    // PSP has only one texture unit (GL_TEXTURE0). Multitexture lightmap is not used.
 #else
     if (lightmapTexture < 0)
         return;
@@ -1394,11 +1405,13 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
             targetTime = field_28133_I + (int64_t)(1000000000LL / limitFps);
         }
 
+#if !PLATFORM_PSP
         if (mc->isSplitScreenActive() && mc->thePlayer2 != nullptr)
         {
             renderSplitScreen(partialTicks, targetTime);
         }
         else
+#endif
         {
             renderWorld(partialTicks, targetTime);
 
@@ -1503,6 +1516,7 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
 
 void EntityRenderer::renderSplitScreen(float partialTicks, int64_t renderTimeLimitNano)
 {
+#if !PLATFORM_PSP
     EntityPlayerSP *entryPlayer = mc->thePlayer;
     EntityPlayerSP *p1 = mc->thePlayerOne ? mc->thePlayerOne : mc->thePlayer;
     EntityPlayerSP *p2 = mc->thePlayer2;
@@ -1614,6 +1628,10 @@ void EntityRenderer::renderSplitScreen(float partialTicks, int64_t renderTimeLim
         int midY = guiH / 2;
         Gui::drawRect(0, midY - 1, guiW, midY + 1, 0xFF000000);
     }
+#else
+    (void)partialTicks;
+    (void)renderTimeLimitNano;
+#endif
 }
 
 void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano)
@@ -2583,6 +2601,7 @@ void EntityRenderer::setupOverlayRendering()
     // never restores them, so every GUI draw *after* the dirt background already
     // runs unlit -- and those are exactly the draws that fail. FontRenderer
     // disables lighting too, and its text is missing all the same.
+    renderDepthMask(true);
     renderClear(RenderClearMask::Depth);  // 256
     renderMatrixMode(RenderMatrixMode::Projection);
     renderLoadIdentity();
@@ -2726,7 +2745,7 @@ void EntityRenderer::updateFogColor(float partialTicks)
         fogColorBlue = static_cast<float>(fogColorBlue * voidFog);
     }
 
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     if (mc->gameSettings != nullptr && mc->gameSettings->legacyLook)
         legacyLookRgb(fogColorRed, fogColorGreen, fogColorBlue);
 #endif

@@ -4,6 +4,7 @@
 #include "GuiOptions.h"
 #include "GameSettings.h"
 #include "legacy/LegacyHelpOptions.h"
+#include "legacy/LegacyDebugOptions.h"
 #include "legacy/LegacyGuiButton.h"
 #include "legacy/LegacyMainMenuLayout.h"
 #include "legacy/LegacyMenuHints.h"
@@ -31,10 +32,10 @@ GuiIngameMenu::GuiIngameMenu()
 	, updateCounter(0)
 	, selectedControlIndex(-1)
 	, hoveredControlIndex(-1)
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	, legacyPauseOpenedAtMillis(System::currentTimeMillis())
 #endif
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	, ps2PauseStartReleaseLatch(true)
 	, ps2PauseActionReleaseLatch(true)
 #endif
@@ -67,6 +68,7 @@ void GuiIngameMenu::initGui()
 		};
 
 		addLegacyButton(4, uiText("Resume Game"));
+		addLegacyButton(7, uiText("Host Options"));
 		addLegacyButton(0, uiText("Help & Options"));
 		addLegacyButton(5, uiText("Achievements"));
 		addLegacyButton(6, uiText("Statistics"));
@@ -126,7 +128,7 @@ void GuiIngameMenu::keyTyped(char_t c, int_t key)
 	const bool legacyPause = mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI;
 	if (legacyPause)
 	{
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
 		if (key == lwjgl::Keyboard::KEY_UP)
 		{
 			moveLegacySelection(-1);
@@ -176,6 +178,10 @@ void GuiIngameMenu::actionPerformed(GuiButton *button)
 	{
 		mc->displayGuiScreen(new GuiStats(this, mc->statFileWriter));
 	}
+	if (button->id == 7)
+	{
+		mc->displayGuiScreen(new LegacyDebugOptions(this, mc->gameSettings, LegacyOptionsBackgroundMode::PausedWorld));
+	}
 }
 
 void GuiIngameMenu::closeLegacyPause()
@@ -188,7 +194,7 @@ void GuiIngameMenu::closeLegacyPause()
 
 void GuiIngameMenu::handleSpecializedMenuInput()
 {
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	const bool legacyPause = mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyUI;
 	if (!legacyPause)
 		return;

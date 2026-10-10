@@ -17,7 +17,7 @@ public:
     static constexpr int_t PREFERRED_SIZE = 100;
 
 private:
-    int_t logoTextureId;   // OpenGL texture ID, -1 if not loaded
+    int   logoTextureId;   // OpenGL texture ID, -1 if not loaded
     int_t logoWidth;
     int_t logoHeight;
 };

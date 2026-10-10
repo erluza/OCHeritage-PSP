@@ -97,11 +97,11 @@ void LegacyCreateWorldScreen::initGui()
         layout.rowY(2), layout.contentWidth, layout.rowHeight, tr->translateKey("selectWorld.mapType")));
 
     delete textboxWorldName;
-    textboxWorldName = new GuiTextField(fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight);
+    textboxWorldName = new GuiTextField(this, fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight, "");
     textboxWorldName->setText(localizedNewWorldText);
 
     delete textboxSeed;
-    textboxSeed = new GuiTextField(fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight);
+    textboxSeed = new GuiTextField(this, fontRenderer, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight, "");
     textboxSeed->setText(seed);
 
     updateFolderName();
@@ -203,8 +203,8 @@ void LegacyCreateWorldScreen::syncSelectedControl()
 void LegacyCreateWorldScreen::updatePointerHover(int_t mouseX, int_t mouseY)
 {
     int_t hover = -1;
-#if PLATFORM_PS2
-    // Legacy PS2 menus deliberately suppress the software mouse pointer. Treating
+#if PLATFORM_PS2 || PLATFORM_PSP
+    // Legacy PS2/PSP menus deliberately suppress the software mouse pointer. Treating
     // its stale coordinates as a live hover leaves D-pad navigation blocked after
     // the virtual keyboard closes.
     (void)mouseX;
@@ -213,7 +213,7 @@ void LegacyCreateWorldScreen::updatePointerHover(int_t mouseX, int_t mouseY)
     if (platformMenuPointerActive())
 #endif
     {
-#if !PLATFORM_PS2
+#if !PLATFORM_PS2 && !PLATFORM_PSP
         GuiTextField *field = moreOptions ? textboxSeed : textboxWorldName;
         if (field != nullptr && pointInside(mouseX, mouseY, layout.contentX, layout.rowY(0), layout.contentWidth, textFieldHeight))
         {
@@ -253,11 +253,15 @@ bool LegacyCreateWorldScreen::adjustSelection(int_t direction)
         return false;
     if (selectedControlIndex == 3 && worldSizeButton != nullptr)
     {
+#if PLATFORM_PSP
+        return false;
+#else
         worldSizeType = (worldSizeType + (direction > 0 ? 1 : 2)) % 3;
         limitedWorld = (worldSizeType != 0);
         updateButtonText();
         mc->sndManager->playSoundFX("random.focus", 1.0f, 1.0f);
         return true;
+#endif
     }
     GuiButton *button = buttonForSelection(selectedControlIndex);
     if (button == nullptr || !button->enabled || !button->enabled2)
@@ -319,13 +323,13 @@ void LegacyCreateWorldScreen::moveSelection(int_t direction)
 void LegacyCreateWorldScreen::updateScreen()
 {
     GuiCreateWorld::updateScreen();
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     // The virtual keyboard owns the console text-input snapshot while a field is
     // focused. Do not let menu navigation consume the same presses underneath it.
     if (platformTextInputExclusive())
         return;
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     if ((pad.pressed & (PLATFORM_TEXT_CLOSE | PLATFORM_TEXT_SHIFT)) != 0)
     {
         if (mc->sndManager != nullptr)
@@ -342,7 +346,7 @@ void LegacyCreateWorldScreen::updateScreen()
         adjustSelection(-1);
     else if ((pad.pressed & PLATFORM_TEXT_RIGHT) != 0)
         adjustSelection(1);
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     if ((pad.pressed & PLATFORM_TEXT_TYPE) != 0)
         activateSelection();
 #elif PLATFORM_WII
@@ -417,7 +421,7 @@ void LegacyCreateWorldScreen::keyTyped(char_t c, int_t key)
         mc->displayGuiScreen(parentScreen);
         return;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == 200)
     {
         moveSelection(-1);

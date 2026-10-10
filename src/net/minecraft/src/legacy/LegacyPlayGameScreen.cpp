@@ -186,7 +186,7 @@ int_t LegacyPlayGameScreen::maxVisibleWorlds() const
     const int_t staticRowsHeight = 2 * base.rowHeight + base.rowSpacing;
     const int_t available = base.panelHeight - playHeaderHeight(height) - playFooterHeight(height) -
         staticRowsHeight;
-    return std::max<int_t>(0, std::min<int_t>(4, (available + base.rowSpacing) /
+    return std::max<int_t>(1, std::min<int_t>(4, (available + base.rowSpacing) /
         (base.rowHeight + base.rowSpacing)));
 }
 
@@ -317,9 +317,9 @@ void LegacyPlayGameScreen::updateScreen()
     GuiSelectWorld::updateScreen();
     if (tutorialMessageTicks > 0)
         --tutorialMessageTicks;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
     const PlatformTextInputSnapshot pad = platformTextInputSnapshot(platformMenuPad());
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     if ((pad.pressed & (PLATFORM_TEXT_CLOSE | PLATFORM_TEXT_SHIFT)) != 0)
     {
         if (mc->sndManager != nullptr)
@@ -332,7 +332,7 @@ void LegacyPlayGameScreen::updateScreen()
         moveSelection(-1);
     else if ((pad.pressed & PLATFORM_TEXT_DOWN) != 0)
         moveSelection(1);
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     if ((pad.pressed & PLATFORM_TEXT_TYPE) != 0)
         activateSelection();
 #elif PLATFORM_WII
@@ -385,7 +385,7 @@ void LegacyPlayGameScreen::keyTyped(char_t c, int_t key)
         mc->displayGuiScreen(parentScreen);
         return;
     }
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_PSP
     if (key == 200)
     {
         moveSelection(-1);

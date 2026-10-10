@@ -276,6 +276,10 @@ namespace LegacyStartup
 
 void run(Minecraft* minecraft)
 {
+#if PLATFORM_PSP
+    (void)minecraft;
+    return;
+#else
     if (minecraft == nullptr || minecraft->gameSettings == nullptr || minecraft->renderEngine == nullptr)
         return;
 
@@ -304,6 +308,7 @@ void run(Minecraft* minecraft)
 
     if (!musicStarted)
         startLegacyCalmMusic(minecraft);
+#endif
 }
 
 } // namespace LegacyStartup

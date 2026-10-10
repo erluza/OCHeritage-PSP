@@ -10,6 +10,11 @@
 #include <SDL.h>
 #endif
 
+#if defined(PLATFORM_PSP) || defined(PSP_PLATFORM) || defined(PSP)
+#include "pc/lwjgl/Mouse.h"
+#include "pc/lwjgl/Display.h"
+#endif
+
 #ifdef WII_PLATFORM
 #include <ogc/lwp_watchdog.h>
 #include <unistd.h>
@@ -107,7 +112,7 @@ inline void setSmoothInputThreadPriority(bool enabled)
 
 inline void getMouseState(int *x, int *y)
 {
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PLATFORM_PSP)
     // LWJGL Mouse::getY() is bottom-left origin. SDL_GetMouseState() is
     // top-left origin, and shared GUI code expects that here.
     if (x) *x = lwjgl::Mouse::getX();

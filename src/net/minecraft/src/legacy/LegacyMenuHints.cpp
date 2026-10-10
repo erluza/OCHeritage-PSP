@@ -5,7 +5,7 @@
 
 void drawLegacyMenuHints(Minecraft *mc, int_t screenWidth, int_t screenHeight, bool showBack)
 {
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
     const std::string buttons[] = {"D-Pad", "Cross", "Circle"};
 #elif PLATFORM_WII
     const std::string buttons[] = {"D-Pad", "A", "B"};

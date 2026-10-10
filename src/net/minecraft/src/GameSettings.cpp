@@ -141,6 +141,7 @@ void GameSettings::setDefaults()
     selectedSkinP2 = "TennisSteve";
     legacyUI = legacyUiDefaultEnabled();
     legacyLook = legacyLookDefaultEnabled();
+    autoJump = true;
     legacyCrafting = false;
     legacyCreative = false;
     alternativeControllerLayout = false;

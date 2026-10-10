@@ -31,15 +31,16 @@ constexpr int_t BUTTON_DEADZONE = 602;
 constexpr int_t BUTTON_DONE = 600;
 constexpr int_t BUTTON_EDIT_PLAYER_NAME = 606;
 constexpr int_t BUTTON_SPLITSCREEN_LAYOUT = 607;
-constexpr int_t BUTTON_LEGACY_CRAFTING = 608;
-constexpr int_t BUTTON_LEGACY_CREATIVE = 609;
+constexpr int_t BUTTON_AUTO_JUMP = 608;
+constexpr int_t BUTTON_LEGACY_CRAFTING = 609;
+constexpr int_t BUTTON_LEGACY_CREATIVE = 610;
 
 }
 
 LegacyHeritageOptions::LegacyHeritageOptions(GuiScreen *parent, GameSettings *settingsValue,
     LegacyOptionsBackgroundMode backgroundModeValue)
     : LegacyOptionsScreen(parent, settingsValue, backgroundModeValue), nameField(nullptr), legacyUiCheckbox(nullptr),
-      legacyLookCheckbox(nullptr), legacyCraftingCheckbox(nullptr), legacyCreativeCheckbox(nullptr),
+      legacyLookCheckbox(nullptr), autoJumpCheckbox(nullptr), legacyCraftingCheckbox(nullptr), legacyCreativeCheckbox(nullptr),
       alternativeControlsCheckbox(nullptr)
 {
 }
@@ -52,7 +53,7 @@ LegacyHeritageOptions::~LegacyHeritageOptions()
 
 void LegacyHeritageOptions::initGui()
 {
-    int_t rowCount = 7; // player name label, player name field, Legacy UI, Legacy Look, Legacy Crafting, Legacy Creative, Done
+    int_t rowCount = 8; // player name label, player name field, Legacy UI, Legacy Look, Auto-Jump, Legacy Crafting, Legacy Creative, Done
 #if PLATFORM_HAS_ASPECT_RATIO_OPTION
     ++rowCount;
 #endif
@@ -101,6 +102,10 @@ void LegacyHeritageOptions::initGui()
     legacyLookCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_LOOK, x, legacyLayout.rowY(row++), w, h,
         uiText("Legacy Look"), settings->legacyLook);
     controlList.push_back(legacyLookCheckbox);
+
+    autoJumpCheckbox = new LegacyOptionCheckbox(BUTTON_AUTO_JUMP, x, legacyLayout.rowY(row++), w, h,
+        uiText("Auto-Jump"), settings->autoJump);
+    controlList.push_back(autoJumpCheckbox);
 
     legacyCraftingCheckbox = new LegacyOptionCheckbox(BUTTON_LEGACY_CRAFTING, x, legacyLayout.rowY(row++), w, h,
         uiText("Legacy Crafting"), settings->legacyCrafting);
@@ -236,6 +241,15 @@ void LegacyHeritageOptions::actionPerformed(GuiButton *button)
         settings->saveOptions();
         if (mc != nullptr && mc->entityRenderer != nullptr)
             mc->entityRenderer->updateWorldLightLevels();
+        return;
+    }
+
+    if (button->id == BUTTON_AUTO_JUMP)
+    {
+        settings->autoJump = !settings->autoJump;
+        if (autoJumpCheckbox != nullptr)
+            autoJumpCheckbox->setChecked(settings->autoJump);
+        settings->saveOptions();
         return;
     }
 

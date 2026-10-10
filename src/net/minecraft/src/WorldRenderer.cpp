@@ -82,7 +82,7 @@ WorldRenderer::WorldRenderer(World *world, std::vector<TileEntity *> *tileEntiti
 	worldObj      = world;
 	tileEntities  = tileEntitiesIn;
 	sizeWidth = sizeHeight = sizeDepth = size;
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 	glRenderList = glListId;
 #else
 	(void)glListId;
@@ -117,7 +117,7 @@ WorldRenderer::WorldRenderer(World *world, std::vector<TileEntity *> *tileEntiti
 #endif
 	isVisible      = true;
 	isInFrustum    = false;
-#if PLATFORM_PC || PLATFORM_PS2
+#if PLATFORM_PC || PLATFORM_PS2 || PLATFORM_PSP
 	isFullyInFrustum = false;
 #endif
 #if PLATFORM_PC_LEGACY
@@ -256,8 +256,10 @@ void WorldRenderer::cleanup()
 	renderTerrainChunkHandlesDestroy(terrainChunkHandles);
 #endif
 
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 	glRenderList = 0;
+#endif
+#if PLATFORM_PC
 	glOcclusionQuery = 0;
 #endif
 }
@@ -360,9 +362,14 @@ void WorldRenderer::updateRenderer()
 {
 	if (!needsUpdate)
 		return;
+#if PLATFORM_PSP
+	pspLastStepDidWork = false;
+#endif
 
+#if PLATFORM_PC
 	updateOcclusionBox();
 	isVisibleFromPosition = false;
+#endif
 
 
 	// Vanilla ChunkCache synchronously requested every source chunk. This port's
@@ -517,6 +524,9 @@ void WorldRenderer::updateRenderer()
 		}
 	}
 
+#if PLATFORM_PSP
+	pspLastStepDidWork = true;
+#endif
 	isChunkLit  = Chunk::isLit;
 	isInitialized = true;
 	tileEntityRenderers = rebuiltTileEntityRenderers;
@@ -742,7 +752,9 @@ void WorldRenderer::callOcclusionQueryList()
 {
 	renderCallDisplayList(glRenderList + 2);
 }
+#endif
 
+#if PLATFORM_PC || PLATFORM_PSP
 int_t WorldRenderer::getGLCallListForPass(int_t pass)
 {
 	if (!isInFrustum)

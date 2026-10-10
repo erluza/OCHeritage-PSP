@@ -1,7 +1,18 @@
 #include "platform/RenderAPI.h"
 
 
+#if defined(PLATFORM_PSP)
+#include <GL/gl.h>
+#include <GL/glu.h>
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+#ifndef APIENTRYP
+#define APIENTRYP APIENTRY *
+#endif
+#else
 #include <glad/glad.h>
+#endif
 #include <SDL.h>
 #ifndef GL_TEXTURE_MAX_ANISOTROPY_EXT
 #define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
@@ -42,6 +53,9 @@
 
 static bool desktopHasOpenGL12()
 {
+#if PLATFORM_PSP
+    return false;
+#else
     const char *version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
     if (version == nullptr)
         return false;
@@ -50,7 +64,56 @@ static bool desktopHasOpenGL12()
     if (std::sscanf(version, "%d.%d", &major, &minor) != 2)
         return false;
     return major > 1 || (major == 1 && minor >= 2);
+#endif
 }
+
+#if PLATFORM_PSP
+bool renderDrawCaptured(const RenderCapturedMesh& mesh);
+bool renderCaptureInterleaved(const RenderInterleavedMesh& mesh, RenderCapturedMesh& out, bool append = false);
+
+enum class PspDisplayCmdType : std::uint8_t
+{
+    DrawCaptured,
+    PushMatrix,
+    PopMatrix,
+    Translate,
+    Scale,
+    Rotate,
+    Color4f,
+    BindTexture,
+    CallList
+};
+
+struct PspDisplayCmd
+{
+    PspDisplayCmdType type;
+    union {
+        struct { float x, y, z; } translate;
+        struct { float x, y, z; } scale;
+        struct { float angle, x, y, z; } rotate;
+        struct { float r, g, b, a; } color;
+        int integer;
+        std::uint32_t meshIndex;
+    } data;
+};
+
+struct PspDisplayList
+{
+    std::vector<PspDisplayCmd> commands;
+    std::vector<RenderCapturedMesh> meshes;
+    bool inUse = false;
+
+    void clear()
+    {
+        std::vector<PspDisplayCmd>().swap(commands);
+        std::vector<RenderCapturedMesh>().swap(meshes);
+        inUse = false;
+    }
+};
+
+static std::vector<PspDisplayList> s_pspLists;
+static int s_pspCurrentRecordingList = 0;
+#endif
 
 // SDL_GL_GetProcAddress-based runtime loaders (desktop only).
 static void *getProcEither(const char *arbName, const char *coreName)
@@ -119,7 +182,11 @@ void renderEnable(RenderCapability capability)
     switch (capability)
     {
         case RenderCapability::Texture2D: glEnable(GL_TEXTURE_2D); break;
+#if !PLATFORM_PSP
         case RenderCapability::ColorMaterial: glEnable(GL_COLOR_MATERIAL); break;
+#else
+        case RenderCapability::ColorMaterial: break;
+#endif
         case RenderCapability::CullFace: glEnable(GL_CULL_FACE); break;
         case RenderCapability::AlphaTest: glEnable(GL_ALPHA_TEST); break;
         case RenderCapability::Blend: glEnable(GL_BLEND); break;
@@ -127,10 +194,18 @@ void renderEnable(RenderCapability capability)
         case RenderCapability::Fog: glEnable(GL_FOG); break;
         case RenderCapability::Lighting: glEnable(GL_LIGHTING); break;
         case RenderCapability::Normalize: glEnable(GL_NORMALIZE); break;
+#if !PLATFORM_PSP
         case RenderCapability::RescaleNormal: glEnable(GL_RESCALE_NORMAL); break;
+#else
+        case RenderCapability::RescaleNormal: break;
+#endif
         case RenderCapability::Light0: glEnable(GL_LIGHT0); break;
         case RenderCapability::Light1: glEnable(GL_LIGHT1); break;
+#if !PLATFORM_PSP
         case RenderCapability::PolygonOffsetFill: glEnable(GL_POLYGON_OFFSET_FILL); break;
+#else
+        case RenderCapability::PolygonOffsetFill: break;
+#endif
     }
 }
 
@@ -139,7 +214,11 @@ void renderDisable(RenderCapability capability)
     switch (capability)
     {
         case RenderCapability::Texture2D: glDisable(GL_TEXTURE_2D); break;
+#if !PLATFORM_PSP
         case RenderCapability::ColorMaterial: glDisable(GL_COLOR_MATERIAL); break;
+#else
+        case RenderCapability::ColorMaterial: break;
+#endif
         case RenderCapability::CullFace: glDisable(GL_CULL_FACE); break;
         case RenderCapability::AlphaTest: glDisable(GL_ALPHA_TEST); break;
         case RenderCapability::Blend: glDisable(GL_BLEND); break;
@@ -147,10 +226,18 @@ void renderDisable(RenderCapability capability)
         case RenderCapability::Fog: glDisable(GL_FOG); break;
         case RenderCapability::Lighting: glDisable(GL_LIGHTING); break;
         case RenderCapability::Normalize: glDisable(GL_NORMALIZE); break;
+#if !PLATFORM_PSP
         case RenderCapability::RescaleNormal: glDisable(GL_RESCALE_NORMAL); break;
+#else
+        case RenderCapability::RescaleNormal: break;
+#endif
         case RenderCapability::Light0: glDisable(GL_LIGHT0); break;
         case RenderCapability::Light1: glDisable(GL_LIGHT1); break;
+#if !PLATFORM_PSP
         case RenderCapability::PolygonOffsetFill: glDisable(GL_POLYGON_OFFSET_FILL); break;
+#else
+        case RenderCapability::PolygonOffsetFill: break;
+#endif
     }
 }
 
@@ -238,6 +325,16 @@ void renderColorMask(bool red, bool green, bool blue, bool alpha)
 
 void renderBindTexture(int texture)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::BindTexture;
+        cmd.data.integer = texture;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture));
 }
 
@@ -264,11 +361,31 @@ void renderSetLightmapColors(const std::uint32_t* colors, int count)
 
 void renderColor4f(float r, float g, float b, float a)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::Color4f;
+        cmd.data.color.r = r;
+        cmd.data.color.g = g;
+        cmd.data.color.b = b;
+        cmd.data.color.a = a;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glColor4f(r, g, b, a);
 }
 
 void renderColor3f(float r, float g, float b)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        renderColor4f(r, g, b, 1.0f);
+        return;
+    }
+#endif
     glColor3f(r, g, b);
 }
 
@@ -306,6 +423,42 @@ void renderTextureSubImageRgba(int level, int x, int y, int width, int height, c
 // pixels rather than a format enum.
 void renderTextureImageRgba(int level, int width, int height, const void *pixels)
 {
+#if PLATFORM_PSP
+    // PSP hardware strictly requires textures to be powers of two and at most 512x512.
+    auto isPot = [](int x) { return x > 0 && (x & (x - 1)) == 0; };
+    auto clampPot = [](int x) {
+        int p = 1;
+        while (p < x && p < 512) p <<= 1;
+        if (p > 512) p = 512;
+        return p;
+    };
+
+    if (width > 512 || height > 512 || !isPot(width) || !isPot(height))
+    {
+        const int targetWidth = clampPot(width);
+        const int targetHeight = clampPot(height);
+        std::vector<unsigned char> resampled(static_cast<std::size_t>(targetWidth * targetHeight * 4));
+        const unsigned char *src = static_cast<const unsigned char *>(pixels);
+
+        for (int y = 0; y < targetHeight; ++y)
+        {
+            const int sy = (y * height) / targetHeight;
+            for (int x = 0; x < targetWidth; ++x)
+            {
+                const int sx = (x * width) / targetWidth;
+                const std::size_t srcIdx = (static_cast<std::size_t>(sy) * width + sx) * 4u;
+                const std::size_t dstIdx = (static_cast<std::size_t>(y) * targetWidth + x) * 4u;
+                resampled[dstIdx + 0] = src[srcIdx + 0];
+                resampled[dstIdx + 1] = src[srcIdx + 1];
+                resampled[dstIdx + 2] = src[srcIdx + 2];
+                resampled[dstIdx + 3] = src[srcIdx + 3];
+            }
+        }
+        glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, targetWidth, targetHeight, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, resampled.data());
+        return;
+    }
+#endif
     glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, width, height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
@@ -317,11 +470,18 @@ void renderTextureImageRgba(int level, int width, int height, const void *pixels
 // ps2_texture_set_parameters for why that is the better answer there.
 void renderTextureParameters(bool blur, bool mipmaps, bool clamp)
 {
+#if PLATFORM_PSP
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, blur ? GL_LINEAR : GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, blur ? GL_LINEAR : GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+#else
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                     blur ? GL_LINEAR : (mipmaps ? GL_NEAREST_MIPMAP_LINEAR : GL_NEAREST));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, blur ? GL_LINEAR : GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp ? GL_CLAMP : GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp ? GL_CLAMP : GL_REPEAT);
+#endif
 }
 
 void renderApplyTextureQuality(bool blur, int mipmapLevel, bool mipmapLinear, int anisotropy)
@@ -374,7 +534,17 @@ int renderGetMaxSamples()
 
 bool renderTextureBeginUpload(int, int, int, int, bool, bool, bool, bool) { return true; }
 bool renderTextureIsValid(int texture) { return texture > 0; }
-void renderResetResources() {}
+void renderResetResources()
+{
+#if PLATFORM_PSP
+    s_pspCurrentRecordingList = 0;
+    for (auto& dl : s_pspLists)
+    {
+        dl.clear();
+    }
+    s_pspLists.clear();
+#endif
+}
 
 
 void renderFogf(RenderFogParameter parameter, float value)
@@ -437,9 +607,14 @@ void renderLightModelAmbient(const float* values)
 
 void renderColorMaterial(RenderFace face, RenderColorMaterialMode mode)
 {
+#ifndef PLATFORM_PSP
     GLenum glFace = face == RenderFace::Front ? GL_FRONT : face == RenderFace::Back ? GL_BACK : GL_FRONT_AND_BACK;
     GLenum glMode = mode == RenderColorMaterialMode::Ambient ? GL_AMBIENT : GL_AMBIENT_AND_DIFFUSE;
     glColorMaterial(glFace, glMode);
+#else
+    (void)face;
+    (void)mode;
+#endif
 }
 
 void renderShadeModel(RenderShadeModel model)
@@ -531,7 +706,11 @@ unsigned int renderGetError()
 
 void renderFogHint(RenderHintMode mode)
 {
+#ifndef PLATFORM_PSP
     glHint(GL_FOG_HINT, mode == RenderHintMode::Nicest ? GL_NICEST : GL_FASTEST);
+#else
+    (void)mode;
+#endif
 }
 
 
@@ -552,26 +731,81 @@ void renderLoadIdentity()
 
 void renderPushMatrix()
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::PushMatrix;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glPushMatrix();
 }
 
 void renderPopMatrix()
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::PopMatrix;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glPopMatrix();
 }
 
 void renderTranslate(float x, float y, float z)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::Translate;
+        cmd.data.translate.x = x;
+        cmd.data.translate.y = y;
+        cmd.data.translate.z = z;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glTranslatef(x, y, z);
 }
 
 void renderRotate(float angle, float x, float y, float z)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::Rotate;
+        cmd.data.rotate.angle = angle;
+        cmd.data.rotate.x = x;
+        cmd.data.rotate.y = y;
+        cmd.data.rotate.z = z;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glRotatef(angle, x, y, z);
 }
 
 void renderScale(float x, float y, float z)
 {
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::Scale;
+        cmd.data.scale.x = x;
+        cmd.data.scale.y = y;
+        cmd.data.scale.z = z;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+#endif
     glScalef(x, y, z);
 }
 
@@ -588,38 +822,6 @@ void renderFrustum(double left, double right, double bottom, double top, double 
 void renderOrtho(double left, double right, double bottom, double top, double nearValue, double farValue)
 {
     glOrtho(left, right, bottom, top, nearValue, farValue);
-}
-
-
-
-int renderGenerateDisplayLists(int count)
-{
-    return static_cast<int>(glGenLists(static_cast<GLsizei>(count)));
-}
-
-void renderDeleteDisplayLists(int first, int count)
-{
-    glDeleteLists(static_cast<GLuint>(first), static_cast<GLsizei>(count));
-}
-
-void renderBeginDisplayList(int list)
-{
-    glNewList(static_cast<GLuint>(list), GL_COMPILE);
-}
-
-void renderEndDisplayList()
-{
-    glEndList();
-}
-
-void renderCallDisplayList(int list)
-{
-    glCallList(static_cast<GLuint>(list));
-}
-
-void renderCallDisplayLists(int count, const int* lists)
-{
-    glCallLists(static_cast<GLsizei>(count), GL_INT, lists);
 }
 
 void renderGenerateOcclusionQueries(int count, int* queries)
@@ -667,66 +869,15 @@ void renderSetLegacyPresentationGamma(bool)
 bool renderCopyFramebufferToBoundTexture(int x, int y, int width, int height)
 {
     if (width <= 0 || height <= 0) return false;
+#ifndef PLATFORM_PSP
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, y, width, height);
     return glGetError() == GL_NO_ERROR;
-}
-
-
-
-bool renderDrawInterleaved(const RenderInterleavedMesh& mesh)
-{
-    if (mesh.data == nullptr || mesh.stride <= 0 || mesh.count <= 0)
-        return false;
-
-    auto pointerForOffset = [&](int offset) -> const void*
-    {
-        return reinterpret_cast<const unsigned char*>(mesh.data) + offset;
-    };
-
-    clientActiveTextureCompat(GL_TEXTURE0_ARB);
-    if (mesh.hasTexture)
-    {
-        glTexCoordPointer(2, GL_FLOAT, mesh.stride, pointerForOffset(mesh.texCoordOffset));
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    }
-    if (mesh.hasBrightness)
-    {
-        clientActiveTextureCompat(GL_TEXTURE1_ARB);
-        glTexCoordPointer(2, GL_SHORT, mesh.stride, pointerForOffset(mesh.brightnessOffset));
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        clientActiveTextureCompat(GL_TEXTURE0_ARB);
-    }
-    if (mesh.hasColor)
-    {
-        glColorPointer(4, GL_UNSIGNED_BYTE, mesh.stride, pointerForOffset(mesh.colorOffset));
-        glEnableClientState(GL_COLOR_ARRAY);
-    }
-    if (mesh.hasNormals)
-    {
-        glNormalPointer(GL_BYTE, mesh.stride, pointerForOffset(mesh.normalOffset));
-        glEnableClientState(GL_NORMAL_ARRAY);
-    }
-
-    glVertexPointer(3, mesh.positionShort ? GL_SHORT : GL_FLOAT, mesh.stride, pointerForOffset(0));
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glDrawArrays(static_cast<GLenum>(renderPrimitiveValue(mesh.primitive)), mesh.first, mesh.count);
-    glDisableClientState(GL_VERTEX_ARRAY);
-
-    if (mesh.hasTexture)
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    if (mesh.hasBrightness)
-    {
-        clientActiveTextureCompat(GL_TEXTURE1_ARB);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        clientActiveTextureCompat(GL_TEXTURE0_ARB);
-    }
-    if (mesh.hasColor)
-        glDisableClientState(GL_COLOR_ARRAY);
-    if (mesh.hasNormals)
-        glDisableClientState(GL_NORMAL_ARRAY);
-
+#else
+    (void)x; (void)y;
     return true;
+#endif
 }
+
 
 
 bool renderCaptureInterleaved(const RenderInterleavedMesh& mesh, RenderCapturedMesh& out, bool append)
@@ -758,6 +909,93 @@ bool renderCaptureInterleaved(const RenderInterleavedMesh& mesh, RenderCapturedM
     return true;
 }
 
+bool renderDrawInterleaved(const RenderInterleavedMesh& mesh)
+{
+    if (mesh.data == nullptr || mesh.stride <= 0 || mesh.count <= 0)
+        return false;
+
+#if PLATFORM_PSP
+    if (s_pspCurrentRecordingList > 0)
+    {
+        if (static_cast<std::size_t>(s_pspCurrentRecordingList) >= s_pspLists.size())
+            s_pspLists.resize(s_pspCurrentRecordingList + 1);
+
+        RenderCapturedMesh captured;
+        if (!renderCaptureInterleaved(mesh, captured, false))
+            return false;
+
+        std::uint32_t meshIdx = static_cast<std::uint32_t>(s_pspLists[s_pspCurrentRecordingList].meshes.size());
+        s_pspLists[s_pspCurrentRecordingList].meshes.push_back(std::move(captured));
+
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::DrawCaptured;
+        cmd.data.meshIndex = meshIdx;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return true;
+    }
+#endif
+
+    auto pointerForOffset = [&](int offset) -> const void*
+    {
+        return reinterpret_cast<const unsigned char*>(mesh.data) + offset;
+    };
+
+    clientActiveTextureCompat(GL_TEXTURE0_ARB);
+    if (mesh.hasTexture)
+    {
+        glTexCoordPointer(2, GL_FLOAT, mesh.stride, pointerForOffset(mesh.texCoordOffset));
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    }
+#if !PLATFORM_PSP
+    if (mesh.hasBrightness)
+    {
+        clientActiveTextureCompat(GL_TEXTURE1_ARB);
+        glTexCoordPointer(2, GL_SHORT, mesh.stride, pointerForOffset(mesh.brightnessOffset));
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        clientActiveTextureCompat(GL_TEXTURE0_ARB);
+    }
+#endif
+    if (mesh.hasColor)
+    {
+        glColorPointer(4, GL_UNSIGNED_BYTE, mesh.stride, pointerForOffset(mesh.colorOffset));
+        glEnableClientState(GL_COLOR_ARRAY);
+    }
+    else
+    {
+        glDisableClientState(GL_COLOR_ARRAY);
+    }
+    if (mesh.hasNormals)
+    {
+        glNormalPointer(GL_BYTE, mesh.stride, pointerForOffset(mesh.normalOffset));
+        glEnableClientState(GL_NORMAL_ARRAY);
+    }
+
+    glVertexPointer(3, mesh.positionShort ? GL_SHORT : GL_FLOAT, mesh.stride, pointerForOffset(0));
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glDrawArrays(static_cast<GLenum>(renderPrimitiveValue(mesh.primitive)), mesh.first, mesh.count);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    if (mesh.hasTexture)
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#if !PLATFORM_PSP
+    if (mesh.hasBrightness)
+    {
+        clientActiveTextureCompat(GL_TEXTURE1_ARB);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        clientActiveTextureCompat(GL_TEXTURE0_ARB);
+    }
+#endif
+    if (mesh.hasColor)
+    {
+        glDisableClientState(GL_COLOR_ARRAY);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+    if (mesh.hasNormals)
+        glDisableClientState(GL_NORMAL_ARRAY);
+
+    return true;
+}
+
 bool renderDrawCaptured(const RenderCapturedMesh& mesh)
 {
     if (mesh.empty()) return false;
@@ -769,5 +1007,162 @@ bool renderDrawCaptured(const RenderCapturedMesh& mesh)
     view.hasNormals = mesh.hasNormals; view.normalOffset = mesh.normalOffset;
     view.hasBrightness = mesh.hasBrightness; view.brightnessOffset = mesh.brightnessOffset;
     return renderDrawInterleaved(view);
+}
+
+int renderGenerateDisplayLists(int count)
+{
+#if PLATFORM_PSP
+    if (count <= 0) return 0;
+    if (s_pspLists.empty())
+    {
+        s_pspLists.resize(1); // 0 is invalid / null
+    }
+    // Try to find a contiguous block of 'count' inactive slots in s_pspLists
+    int run = 0;
+    int runStart = 0;
+    for (std::size_t i = 1; i < s_pspLists.size(); ++i)
+    {
+        if (!s_pspLists[i].inUse)
+        {
+            if (run == 0) runStart = static_cast<int>(i);
+            run++;
+            if (run == count)
+            {
+                for (int j = 0; j < count; ++j)
+                {
+                    s_pspLists[runStart + j].clear();
+                    s_pspLists[runStart + j].inUse = true;
+                }
+                return runStart;
+            }
+        }
+        else
+        {
+            run = 0;
+        }
+    }
+    int base = static_cast<int>(s_pspLists.size());
+    s_pspLists.resize(base + count);
+    for (int j = 0; j < count; ++j)
+    {
+        s_pspLists[base + j].clear();
+        s_pspLists[base + j].inUse = true;
+    }
+    return base;
+#else
+    return static_cast<int>(glGenLists(static_cast<GLsizei>(count)));
+#endif
+}
+
+void renderDeleteDisplayLists(int first, int count)
+{
+#if PLATFORM_PSP
+    if (first <= 0 || count <= 0) return;
+    int end = first + count;
+    if (static_cast<std::size_t>(end) > s_pspLists.size())
+        end = static_cast<int>(s_pspLists.size());
+    for (int i = first; i < end; ++i)
+    {
+        s_pspLists[i].clear();
+    }
+#else
+    glDeleteLists(static_cast<GLuint>(first), static_cast<GLsizei>(count));
+#endif
+}
+
+void renderBeginDisplayList(int list)
+{
+#if PLATFORM_PSP
+    if (list <= 0) return;
+    if (static_cast<std::size_t>(list) >= s_pspLists.size())
+    {
+        s_pspLists.resize(list + 1);
+    }
+    s_pspLists[list].clear();
+    s_pspLists[list].inUse = true;
+    s_pspCurrentRecordingList = list;
+#else
+    glNewList(static_cast<GLuint>(list), GL_COMPILE);
+#endif
+}
+
+void renderEndDisplayList()
+{
+#if PLATFORM_PSP
+    s_pspCurrentRecordingList = 0;
+#else
+    glEndList();
+#endif
+}
+
+void renderCallDisplayList(int list)
+{
+#if PLATFORM_PSP
+    if (list <= 0 || static_cast<std::size_t>(list) >= s_pspLists.size())
+        return;
+
+    if (s_pspCurrentRecordingList > 0)
+    {
+        PspDisplayCmd cmd;
+        cmd.type = PspDisplayCmdType::CallList;
+        cmd.data.integer = list;
+        s_pspLists[s_pspCurrentRecordingList].commands.push_back(cmd);
+        return;
+    }
+
+    const PspDisplayList& dl = s_pspLists[list];
+    if (!dl.inUse)
+        return;
+
+    for (const PspDisplayCmd& cmd : dl.commands)
+    {
+        switch (cmd.type)
+        {
+            case PspDisplayCmdType::DrawCaptured:
+                if (cmd.data.meshIndex < dl.meshes.size())
+                    renderDrawCaptured(dl.meshes[cmd.data.meshIndex]);
+                break;
+            case PspDisplayCmdType::PushMatrix:
+                glPushMatrix();
+                break;
+            case PspDisplayCmdType::PopMatrix:
+                glPopMatrix();
+                break;
+            case PspDisplayCmdType::Translate:
+                glTranslatef(cmd.data.translate.x, cmd.data.translate.y, cmd.data.translate.z);
+                break;
+            case PspDisplayCmdType::Scale:
+                glScalef(cmd.data.scale.x, cmd.data.scale.y, cmd.data.scale.z);
+                break;
+            case PspDisplayCmdType::Rotate:
+                glRotatef(cmd.data.rotate.angle, cmd.data.rotate.x, cmd.data.rotate.y, cmd.data.rotate.z);
+                break;
+            case PspDisplayCmdType::Color4f:
+                glColor4f(cmd.data.color.r, cmd.data.color.g, cmd.data.color.b, cmd.data.color.a);
+                break;
+            case PspDisplayCmdType::BindTexture:
+                glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(cmd.data.integer));
+                break;
+            case PspDisplayCmdType::CallList:
+                renderCallDisplayList(cmd.data.integer);
+                break;
+        }
+    }
+#else
+    glCallList(static_cast<GLuint>(list));
+#endif
+}
+
+void renderCallDisplayLists(int count, const int* lists)
+{
+#if PLATFORM_PSP
+    if (lists == nullptr || count <= 0) return;
+    for (int i = 0; i < count; ++i)
+    {
+        renderCallDisplayList(lists[i]);
+    }
+#else
+    glCallLists(static_cast<GLsizei>(count), GL_INT, lists);
+#endif
 }
 

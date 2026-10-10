@@ -13,7 +13,22 @@ constexpr int_t LEGACY_PANORAMA_WII_MAX_WIDTH = 1024;
 std::unique_ptr<BufferedImage> legacyPreparePanoramaForUpload(
 	const std::string &name, std::unique_ptr<BufferedImage> image)
 {
-	if (!image || name != "/legacy/panorama.png")
+	if (!image)
+		return image;
+
+#if PLATFORM_PSP
+	if (name != "/legacy/panorama.png" && name != "/legacy/title.png")
+		return image;
+
+	const int_t sourceWidth = image->getWidth();
+	const int_t sourceHeight = image->getHeight();
+	if (sourceWidth <= 0 || sourceHeight <= 0)
+		return image;
+
+	const int_t targetWidth = 512;
+	const int_t targetHeight = 128;
+#else
+	if (name != "/legacy/panorama.png")
 		return image;
 
 	int_t maxWidth = 0;
@@ -35,6 +50,7 @@ std::unique_ptr<BufferedImage> legacyPreparePanoramaForUpload(
 		static_cast<long long>(sourceHeight) * static_cast<long long>(targetWidth);
 	const int_t targetHeight = std::max<int_t>(1, static_cast<int_t>(
 		(scaledHeight + sourceWidth / 2) / sourceWidth));
+#endif
 
 	const unsigned char *src = image->getRawPixels();
 	std::unique_ptr<unsigned char[]> dst(

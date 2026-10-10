@@ -31,10 +31,11 @@ Pathfinder::Pathfinder(IBlockAccess *iblockaccess, bool woodenDoorAllowed, bool 
 {
 	path = new Path();
 #if PLATFORM_BOUNDED_PATHFIND
-	const int_t expectedPointCount = PLATFORM_PATHFIND_MAX_NODES * 4 + 2;
+	const int_t maxNodes = std::max<int_t>(16, std::min<int_t>(PLATFORM_PATHFIND_MAX_NODES, 4096));
+	const int_t expectedPointCount = maxNodes * 4 + 2;
 	const int_t minimumSlotCount = expectedPointCount * 2;
 	int_t slotCount = 16;
-	while (slotCount < minimumSlotCount)
+	while (slotCount < minimumSlotCount && slotCount > 0 && slotCount < 65536)
 		slotCount <<= 1;
 	allocatedPoints.reserve(static_cast<std::size_t>(expectedPointCount));
 	pointTable.resize(static_cast<std::size_t>(slotCount));

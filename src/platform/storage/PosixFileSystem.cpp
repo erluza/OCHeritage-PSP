@@ -1,4 +1,4 @@
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(PLATFORM_PSP)
 
 #include "platform/storage/PosixFileSystem.h"
 #include "platform/storage/PathUtils.h"

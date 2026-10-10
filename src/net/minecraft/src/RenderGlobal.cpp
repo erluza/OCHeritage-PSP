@@ -68,7 +68,7 @@
 #include "Frustrum.h"
 #include "GameSettings.h"
 #include "legacy/LegacyLook.h"
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 #include "GLAllocation.h"
 #endif
 #include "GuiIngame.h"
@@ -110,7 +110,7 @@ namespace
 {
 inline void applyPs2LegacyAtmosphereRgb(Minecraft *mc, float &red, float &green, float &blue)
 {
-#if PLATFORM_PS2
+#if PLATFORM_PS2 || PLATFORM_PSP
 	if (mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyLook)
 		legacyLookRgb(red, green, blue);
 #else
@@ -176,17 +176,21 @@ RenderGlobal::RenderGlobal(Minecraft *minecraft, RenderEngine *renderengine)
 
 #if PLATFORM_PC
 	occlusionEnabled = !PLATFORM_PC_LEGACY && renderSupportsFeature(RenderFeature::OcclusionQuery);
-	// Desktop 1.2.5 retains three GL lists per WorldRenderer (two terrain passes
-	// plus the occlusion box). Legacy PC uses a fixed low-end grid, so reserve only
+#endif
+	// Desktop 1.2.5 and PSP retain three GL lists per WorldRenderer (two terrain passes
+	// plus the occlusion box). Legacy PC and PSP use a fixed low-end grid, so reserve only
 	// the namespace that grid can address instead of the desktop maximum.
-#if PLATFORM_PC_LEGACY
+#if PLATFORM_PC_LEGACY || PLATFORM_PSP
 	constexpr int_t maxWorldRenderers = PLATFORM_VISIBLE_CHUNK_DIAMETER * PLATFORM_VERTICAL_CHUNK_COUNT * PLATFORM_VISIBLE_CHUNK_DIAMETER;
 #else
 	constexpr int_t maxChunksWide = 400 / 16 + 1;
 	constexpr int_t maxChunksTall = WorldHeight::SECTION_COUNT;
 	constexpr int_t maxWorldRenderers = maxChunksWide * maxChunksTall * maxChunksWide;
 #endif
+#if PLATFORM_PC || PLATFORM_PSP
 	glRenderListBase = GLAllocation::generateDisplayLists(maxWorldRenderers * 3);
+#endif
+#if PLATFORM_PC
 	if (occlusionEnabled)
 	{
 		glOcclusionQueryBase = std::vector<int_t>(maxWorldRenderers);
@@ -509,7 +513,7 @@ void RenderGlobal::loadRenderers()
 	worldRenderers = new WorldRenderer *[totalRenderers]();
 	sortedWorldRenderers = new WorldRenderer *[totalRenderers]();
 
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 	int_t k = 0;
 #endif
 	int_t l = 0;
@@ -528,7 +532,7 @@ void RenderGlobal::loadRenderers()
 			for (int_t l1 = 0; l1 < renderChunksDeep; l1++)
 			{
 				int_t index = (l1 * renderChunksTall + k1) * renderChunksWide + j1;
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 				const int_t rendererListId = glRenderListBase + k;
 #else
 				const int_t rendererListId = 0;
@@ -546,7 +550,7 @@ void RenderGlobal::loadRenderers()
 				worldRenderers[index]->markDirty();
 				sortedWorldRenderers[index] = worldRenderers[index];
 				enqueueRendererUpdate(worldRenderers[index]);
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_PSP
 				k += 3;
 #endif
 			}
@@ -856,7 +860,7 @@ jstring RenderGlobal::getDebugInfoEntities()
 }
 
 #if PLATFORM_CENTER_VERTICAL_RENDERERS
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 int_t RenderGlobal::chooseConsoleVerticalStartSection(int_t playerBlockY) const
 {
 	const int_t maxStartSection = std::max(0, WorldHeight::SECTION_COUNT - renderChunksTall);
@@ -953,7 +957,7 @@ void RenderGlobal::markRenderersForNewPosition(int_t i, int_t j, int_t k)
 	// Console windows favour terrain below the player and move only when the
 	// player reaches a guard edge, avoiding section-boundary oscillation.
 	int_t startSection = 0;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	startSection = chooseConsoleVerticalStartSection(j + 8);
 	if (verticalWindowInitialized)
 		remapCenteredVerticalRendererSlots(startSection);
@@ -967,7 +971,7 @@ void RenderGlobal::markRenderersForNewPosition(int_t i, int_t j, int_t k)
 	remapCenteredVerticalRendererSlots(startSection);
 #endif
 	verticalStartSection = startSection;
-#if PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_PSP
 	verticalWindowInitialized = true;
 #endif
 #endif

@@ -122,9 +122,8 @@ namespace
 		renderEnable(RenderCapability::Blend);
 		renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
 
-		renderEnable(RenderCapability::DepthTest);
-		renderDepthFunc(RenderCompare::LessEqual);
-		renderDepthMask(true);
+		renderDisable(RenderCapability::DepthTest);
+		renderDepthMask(false);
 		renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
@@ -544,6 +543,12 @@ void GuiIngame::renderPlayerStatusHudGeometry(int_t sw, int_t sh, Tessellator *c
 
 void GuiIngame::renderPlayerStatusHudUncached(int_t sw, int_t sh)
 {
+	renderBindTexture(mc->renderEngine->getTexture("/gui/icons.png"));
+	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+	renderEnable(RenderCapability::Blend);
+	renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+	renderDisable(RenderCapability::DepthTest);
+	renderDepthMask(false);
 	renderPlayerStatusHudGeometry(sw, sh, nullptr);
 }
 
@@ -801,6 +806,7 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	zLevel = -90.0f;
 	drawTexturedModalRect(sw / 2 - 91, hudHeight - 22, 0,  0, 182, 22);
 	drawTexturedModalRect((sw / 2 - 91 - 1) + inv->currentItem * 20, hudHeight - 22 - 1, 0, 22, 24, 22);
+	zLevel = 0.0f;
 #endif
 
 	if (!showDebug)
@@ -815,7 +821,7 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 #else
 		drawTexturedModalRect(sw / 2 - 7, sh / 2 - 7, 0, 0, 16, 16);
 #endif
-		renderDisable(RenderCapability::Blend);
+		renderEnable(RenderCapability::Blend);
 		renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
 		renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	}
@@ -825,7 +831,11 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	// [FIX DEFENSIVO] Verificación contra nullptr en mc->playerController antes de consultar shouldDrawHUD()
 	if (mc->playerController != nullptr && mc->playerController->shouldDrawHUD())
 	{
-#if PLATFORM_PC_LEGACY
+		renderEnable(RenderCapability::Blend);
+		renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+#if PLATFORM_PSP
+		renderPlayerStatusHudUncached(sw, hudHeight);
+#elif PLATFORM_PC_LEGACY
 		pcLegacyRenderPlayerStatusHud(sw, hudHeight);
 #elif defined(PS2_PLATFORM)
 		ps2RenderPlayerStatusHud(sw, hudHeight);
@@ -851,6 +861,9 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	platformProfileRenderPhaseEnd(cycHudItems, PlatformRenderPhase::HudItems);
 #endif
 	renderDisable(RenderCapability::RescaleNormal);
+	renderDisable(RenderCapability::DepthTest);
+	renderDepthMask(false);
+	zLevel = 0.0f;
 
 	if (mc->thePlayer->getSleepTimer() > 0)
 	{
@@ -1000,6 +1013,13 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	platformProfileRenderPhaseEnd(cycHudText, PlatformRenderPhase::HudText);
 	const std::uint32_t cycHudHints = platformProfileRenderPhaseBegin();
 #endif
+	zLevel = 0.0f;
+	renderDisable(RenderCapability::DepthTest);
+	renderDepthMask(false);
+	renderEnable(RenderCapability::Texture2D);
+	renderEnable(RenderCapability::Blend);
+	renderBlendFunc(RenderBlendFactor::SrcAlpha, RenderBlendFactor::OneMinusSrcAlpha);
+	renderColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	LegacyControlTooltipHud::render(mc, sw, sh);
 	if (!mc->isSplitScreenActive())
 		LegacyTipHud::render(mc, sw, sh);

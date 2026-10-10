@@ -38,4 +38,7 @@ private:
     int_t page;
     int_t rowsPerPage;
     std::vector<LegacyControlsBindingRow> rows;
+    std::vector<GuiButton *> bindingRowButtons;
+    GuiButton *previousPageButton = nullptr;
+    GuiButton *nextPageButton = nullptr;
 };

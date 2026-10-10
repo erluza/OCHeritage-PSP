@@ -4,7 +4,9 @@
 #include "EntityPlayerSP.h"
 #include "java/File.h"
 #include "platform/Storage.h"
+#include "platform/Resources.h"
 #include "platform/Log.h"
+#include "GameResources.h"
 
 #ifdef PS2_PLATFORM
 #include "ps2/storage/assets/Ps2Assets.h"
@@ -261,6 +263,11 @@ void SkinManager::scanCustomSkins()
 #endif
     if (primaryDir != "skins" && primaryDir != "./skins")
         searchDirs.push_back("skins");
+    std::string baseSkins = PlatformStorage::join(PlatformResources::baseDir(), "skins");
+    if (std::find(searchDirs.begin(), searchDirs.end(), baseSkins) == searchDirs.end())
+        searchDirs.push_back(baseSkins);
+    if (std::find(searchDirs.begin(), searchDirs.end(), "./skins") == searchDirs.end())
+        searchDirs.push_back("./skins");
 
     std::vector<std::string> seenIds;
 
@@ -679,8 +686,11 @@ std::string SkinManager::getPlayer2SkinTexture()
 {
     init();
     const SkinEntry* skin = getSkinById(s_selectedIdP2);
-    if (skin != nullptr)
-        return skin->modelPath;
+    if (skin != nullptr && !skin->modelPath.empty())
+    {
+        if (GameResources::open(skin->modelPath) != nullptr)
+            return skin->modelPath;
+    }
     return getDefaultSkinTexture();
 }
 
@@ -688,8 +698,11 @@ std::string SkinManager::getActiveSkinTexture()
 {
     init();
     const SkinEntry* skin = getSkinById(s_selectedId);
-    if (skin != nullptr)
-        return skin->modelPath;
+    if (skin != nullptr && !skin->modelPath.empty())
+    {
+        if (GameResources::open(skin->modelPath) != nullptr)
+            return skin->modelPath;
+    }
     return getDefaultSkinTexture();
 }
 
