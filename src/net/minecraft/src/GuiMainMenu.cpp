@@ -12,6 +12,7 @@
 #include "legacy/LegacyLanguageOptions.h"
 #include "GuiSelectWorld.h"
 #include "GuiMultiplayer.h"
+#include "GuiMultiplayerLoading.h"
 #include "GuiTexturePacks.h"
 #include "mods/GuiMods.h"
 #include "StringTranslate.h"
@@ -341,7 +342,7 @@ void GuiMainMenu::actionPerformed(GuiButton *button)
         else
             mc->displayGuiScreen(new GuiSelectWorld(this));
     }
-    if (button->id == 2) mc->displayGuiScreen(new GuiMultiplayer(this));
+    if (button->id == 2) mc->displayGuiScreen(new GuiMultiplayerLoading(this));
     if (button->id == 3) mc->displayGuiScreen(new GuiMods(this));
     if (button->id == 6) mc->displayGuiScreen(new GuiSkinSelector(this));
     if (button->id == 4) mc->shutdown();
