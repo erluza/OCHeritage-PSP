@@ -260,6 +260,7 @@ endif()
 target_include_directories(OptiCraft PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/pc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/net/minecraft/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/stb"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/miniaudio"
     "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib/contrib/minizip"

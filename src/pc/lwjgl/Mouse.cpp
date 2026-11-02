@@ -181,9 +181,9 @@ void clearDeltas()
 
 void clearEvents()
 {
-	while (!event_queue.empty())
-		event_queue.pop();
-	current_event = {};
+	while (!detail::event_queue.empty())
+		detail::event_queue.pop();
+	detail::event_current = {};
 	clearDeltas();
 }
 
